@@ -1426,8 +1426,6 @@ function importarDatos(input) {
       // Migración de seguridad
       state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
       if (!state.examenes) state.examenes = [];
-      // Siempre reemplazar el horario con el predeterminado actualizado
-      state.horario = DEFAULT_STATE.horario;
       saveState();
       // Restaurar planState (correlativas)
       if (data.planState) savePlanState(data.planState);
