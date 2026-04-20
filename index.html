@@ -1082,6 +1082,14 @@ body {
       <label class="form-label">AULA / SALA</label>
       <input class="form-input" id="c-aula" placeholder="Aula 12">
     </div>
+    <div class="form-group">
+      <label class="form-label">TIPO</label>
+      <select class="form-input" id="c-tipo">
+        <option value="">Sin especificar</option>
+        <option value="teoria">📖 Teoría</option>
+        <option value="practica">🔧 Práctica</option>
+      </select>
+    </div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-clase')">Cancelar</button>
       <button class="mbtn mbtn-ok" onclick="guardarClase()">Guardar</button>
@@ -1593,9 +1601,14 @@ function rHorario(){
   const g=document.getElementById('horario-grid');
   if(!g) return;
 
-  // Solo mostrar horas con contenido + rango útil (8:00 - 16:00 = índices 1..9)
-  const HORAS_SHOW = [1,2,3,4,5,6,7,8,9]; // 08 a 16
-  const HORAS_ALL  = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
+  const HORAS_ALL = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
+
+  // Calcular rango dinámico: mostrar desde la hora más temprana hasta la más tardía con clases
+  const horasConClase = state.horario.map(c => c.hora);
+  const horaMin = horasConClase.length ? Math.max(0, Math.min(...horasConClase)) : 1;
+  const horaMax = horasConClase.length ? Math.min(13, Math.max(...horasConClase)) : 9;
+  const HORAS_SHOW = [];
+  for (let i = horaMin; i <= horaMax; i++) HORAS_SHOW.push(i);
 
   let html='<div></div>';
   DIAS.forEach(d=>html+=`<div class="hcell-head">${d}</div>`);
@@ -1611,17 +1624,19 @@ function rHorario(){
         const m=getM(c.materiaId);
         const nc=m?`c-${m.color}`:'c-verde';
         const short=m?m.nombre.split(' ')[0].substring(0,5):'?';
-        html+=`<div class="hcell ${nc}" onclick="delClase(${c.id})" title="Tap para eliminar">
+        const tipoBadge = c.tipo ? `<span style="font-size:7px;opacity:0.8;font-family:'Space Mono',monospace;">${c.tipo==='practica'?'PRÁ':'TEO'}</span>` : '';
+        html+=`<div class="hcell ${nc}" onclick="accionClase(${c.id})" title="${m?m.nombre:''} · Tocá para opciones">
           <span>${short}</span>
-          <span class="hcell-aula">${c.aula}</span>
+          ${tipoBadge}
+          <span class="hcell-aula">${c.aula||''}</span>
         </div>`;
       } else {
-        // Múltiples materias en el mismo bloque: mostrar apiladas
         const inner = clases.map(c=>{
           const m=getM(c.materiaId);
           const nc=m?`c-${m.color}`:'c-verde';
           const short=m?m.nombre.split(' ')[0].substring(0,4):'?';
-          return `<div class="hcell-multi ${nc}" onclick="delClase(${c.id})" title="Tap para eliminar">${short}</div>`;
+          const tp = c.tipo ? (c.tipo==='practica'?'P':'T') : '';
+          return `<div class="hcell-multi ${nc}" onclick="accionClase(${c.id})">${short}${tp?'·'+tp:''}</div>`;
         }).join('');
         html+=`<div class="hcell" style="flex-direction:column;gap:1px;padding:1px;background:var(--panel2);border-color:var(--border);">${inner}</div>`;
       }
@@ -1629,6 +1644,25 @@ function rHorario(){
   });
   g.innerHTML=html;
 }
+
+// Menú de opciones al tocar una clase
+window.accionClase = function(id) {
+  const c = state.horario.find(x => x.id === id);
+  if (!c) return;
+  const m = getM(c.materiaId);
+  const nombre = m ? m.nombre : 'Clase';
+  const HORAS_ALL = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
+  const hora = HORAS_ALL[c.hora] || '';
+  const tipoStr = c.tipo ? (c.tipo==='practica' ? ' · Práctica' : ' · Teoría') : '';
+
+  // Usar confirm como menú simple (compatible con todos los navegadores móviles)
+  const opcion = confirm(`${nombre}\n${hora}hs${tipoStr} · ${c.aula||'Sin aula'}\n\n¿Eliminar esta clase?`);
+  if (opcion) {
+    state.horario = state.horario.filter(x => x.id !== id);
+    showToast('🗑️ Clase eliminada');
+    saveState(); render();
+  }
+};
 
 function rAvance(){
   const sr=document.getElementById('stat-row');
@@ -2206,20 +2240,17 @@ function guardarClase(){
   const matId=parseInt(document.getElementById('c-materia').value);
   const dia=parseInt(document.getElementById('c-dia').value);
   const hora=parseInt(document.getElementById('c-hora').value);
-  const aula=document.getElementById('c-aula').value.trim()||'—';
-  // Permitir múltiples clases en el mismo bloque
-  state.horario.push({id:Date.now(),materiaId:matId,dia,hora,aula});
+  const aula=sanitize(document.getElementById('c-aula').value.trim())||'—';
+  const tipo=document.getElementById('c-tipo').value||'';
+  state.horario.push({id:Date.now(), materiaId:matId, dia, hora, aula, tipo});
   document.getElementById('c-aula').value='';
+  document.getElementById('c-tipo').value='';
   closeModal('modal-clase');
   showToast('🗓️ Clase agregada');
   saveState(); render();
 }
 
-window.delClase=function(id){
-  if(!confirm('¿Eliminar esta clase del horario?')) return;
-  state.horario=state.horario.filter(c=>c.id!==id);
-  saveState(); render();
-};
+// delClase es manejado por accionClase()
 
 // ── CALENDARIO ACADÉMICO 2026-2027 ──
 const CAL_RANGOS = [
