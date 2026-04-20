@@ -274,35 +274,6 @@ body {
 .chip.on { background:rgba(94,234,212,0.12); border-color:var(--accent); color:var(--accent); }
 
 /* ── TAREA ROW ── */
-.tipo-btn {
-  flex:1; padding:10px; border-radius:12px; border:1px solid var(--border);
-  background:var(--panel2); color:var(--muted);
-  font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600;
-  cursor:pointer; transition:all 0.2s;
-}
-.tipo-btn.active {
-  background:rgba(94,234,212,0.12); border-color:var(--accent); color:var(--accent);
-}
-.autoeval-badge {
-  font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
-  padding:3px 8px; border-radius:999px;
-  background:rgba(129,140,248,0.15); color:var(--accent2);
-  border:1px solid rgba(129,140,248,0.3);
-  flex-shrink:0;
-}
-.autoeval-info {
-  font-family:'Space Mono',monospace; font-size:9px; color:var(--muted);
-  margin-top:3px; line-height:1.6;
-}
-.disponibilidad-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
-  padding:3px 8px; border-radius:999px; flex-shrink:0;
-}
-.db-abierta  { background:rgba(74,222,128,0.12);  color:var(--success);  border:1px solid rgba(74,222,128,0.3);  }
-.db-futura   { background:rgba(251,146,60,0.12);   color:var(--accent3);  border:1px solid rgba(251,146,60,0.3);  }
-.db-cerrada  { background:rgba(248,113,113,0.12);  color:var(--danger);   border:1px solid rgba(248,113,113,0.3); }
-
 .tarea-row {
   display:flex; align-items:center; gap:12px;
   padding:14px 16px;
@@ -340,12 +311,17 @@ body {
 /* ── HORARIO ── */
 .horario-wrap { position: relative; }
 .horario-scroll { overflow-x:auto; padding-bottom:8px; }
+.horario-scroll::after {
+  content:'';
+  position:absolute; top:0; right:0; bottom:8px; width:28px;
+  background: linear-gradient(to right, transparent, var(--panel));
+  pointer-events:none; border-radius:0 16px 16px 0;
+}
 .hgrid {
   display:grid;
-  grid-template-columns: 44px repeat(5,minmax(58px,1fr));
+  grid-template-columns: 44px repeat(5,minmax(62px,1fr));
   gap:3px;
-  min-width: 340px;
-  width: 100%;
+  min-width: 360px;
 }
 .hcell-head {
   text-align:center; font-family:'Space Mono',monospace; font-size:10px;
@@ -824,7 +800,6 @@ body {
       <div class="chip on" onclick="filtrar('todas',this)">Todas</div>
       <div class="chip" onclick="filtrar('pendientes',this)">Pendientes</div>
       <div class="chip" onclick="filtrar('urgentes',this)">Urgentes 🔥</div>
-      <div class="chip" onclick="filtrar('autoeval',this)">🧠 Autoevaluaciones</div>
       <div class="chip" onclick="filtrar('completadas',this)">Completadas ✅</div>
     </div>
     <div id="tareas-list"></div>
@@ -963,20 +938,20 @@ body {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">1° PARCIAL</label>
-        <input class="form-input" id="m-n1" type="number" min="0" max="10" step="0.5" placeholder="—"
-          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>10)?'var(--danger)':''" >
+        <label class="form-label">1° PARCIAL (0-100)</label>
+        <input class="form-input" id="m-n1" type="number" min="0" max="100" step="1" placeholder="—"
+          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
       </div>
       <div class="form-group">
-        <label class="form-label">2° PARCIAL</label>
-        <input class="form-input" id="m-n2" type="number" min="0" max="10" step="0.5" placeholder="—"
-          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>10)?'var(--danger)':''" >
+        <label class="form-label">2° PARCIAL (0-100)</label>
+        <input class="form-input" id="m-n2" type="number" min="0" max="100" step="1" placeholder="—"
+          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">FINAL (si aplica)</label>
-      <input class="form-input" id="m-nf" type="number" min="0" max="10" step="0.5" placeholder="—"
-        oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>10)?'var(--danger)':''">
+      <label class="form-label">FINAL (0-100, si aplica)</label>
+      <input class="form-input" id="m-nf" type="number" min="0" max="100" step="1" placeholder="—"
+        oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
     </div>
     <div class="form-group">
       <label class="form-label">ESTADO</label>
@@ -989,7 +964,7 @@ body {
           <option value="pendiente">⏳ Pendiente (bloqueada)</option>
         </select>
         <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px;line-height:1.5;">
-          💡 Auto: ≥7 en ambos parciales → Promoción · ≥4 en ambos → Sin Promoción
+        💡 Auto: ambos parciales ≥ 60 → Regular (puede rendir final)
         </div>
     </div>
     <div class="modal-btns">
@@ -1004,16 +979,6 @@ body {
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-tarea-title">Nueva <span>tarea</span></div>
-
-    <!-- Tipo de tarea -->
-    <div class="form-group">
-      <label class="form-label">TIPO</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="tipo-btn active" id="tbtn-tarea" onclick="setTipoTarea('tarea')">📝 Tarea / TP</button>
-        <button class="tipo-btn" id="tbtn-autoeval" onclick="setTipoTarea('autoeval')">🧠 Autoevaluación</button>
-      </div>
-    </div>
-
     <div class="form-group">
       <label class="form-label">TÍTULO</label>
       <input class="form-input" id="t-titulo" placeholder="Ej: TP Nro 3 · Derivadas">
@@ -1022,48 +987,11 @@ body {
       <label class="form-label">MATERIA</label>
       <select class="form-input" id="t-materia"></select>
     </div>
-
-    <!-- Campos solo para autoevaluación -->
-    <div id="autoeval-fields" style="display:none;">
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">INTENTOS PERMITIDOS</label>
-          <input class="form-input" id="t-intentos" type="number" min="1" placeholder="Ej: 3">
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">TIEMPO LÍMITE</label>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input class="form-input" id="t-tiempo" type="number" min="1" placeholder="60" style="flex:1;">
-            <select class="form-input" id="t-tiempo-unit" style="width:auto;padding-left:10px;padding-right:10px;">
-              <option value="min">min</option>
-              <option value="hs">hs</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:14px;">
-        <label class="form-label">🟢 APERTURA (fecha y hora)</label>
-        <div class="form-row">
-          <input class="form-input" id="t-abre-fecha" type="date">
-          <input class="form-input" id="t-abre-hora" type="time">
-        </div>
-      </div>
-      <div style="margin-top:14px;">
-        <label class="form-label">🔴 CIERRE (fecha y hora)</label>
-        <div class="form-row">
-          <input class="form-input" id="t-cierra-fecha" type="date">
-          <input class="form-input" id="t-cierra-hora" type="time">
-        </div>
-      </div>
-    </div>
-
-    <!-- Fecha entrega (solo tareas normales) -->
-    <div id="tarea-fecha-wrap" class="form-group" style="margin-top:14px;">
+    <div class="form-group">
       <label class="form-label">FECHA DE ENTREGA</label>
       <input class="form-input" id="t-fecha" type="date">
     </div>
-
-    <div class="form-group" style="margin-top:14px;">
+    <div class="form-group">
       <label class="form-label">DESCRIPCIÓN (opcional)</label>
       <input class="form-input" id="t-desc" placeholder="Páginas, consignas...">
     </div>
@@ -1140,7 +1068,13 @@ body {
       <div class="form-group">
         <label class="form-label">HORA</label>
         <select class="form-input" id="c-hora">
-          <option value="0">07:00</option><option value="1">07:30</option><option value="2">08:00</option><option value="3">08:30</option><option value="4">09:00</option><option value="5">09:30</option><option value="6">10:00</option><option value="7">10:30</option><option value="8">11:00</option><option value="9">11:30</option><option value="10">12:00</option><option value="11">12:30</option><option value="12">13:00</option><option value="13">13:30</option><option value="14">14:00</option><option value="15">14:30</option><option value="16">15:00</option><option value="17">15:30</option><option value="18">16:00</option><option value="19">16:30</option><option value="20">17:00</option><option value="21">17:30</option><option value="22">18:00</option><option value="23">18:30</option><option value="24">19:00</option><option value="25">19:30</option><option value="26">20:00</option><option value="27">20:30</option>
+          <option value="0">07:00</option><option value="1">08:00</option>
+          <option value="2">09:00</option><option value="3">10:00</option>
+          <option value="4">11:00</option><option value="5">12:00</option>
+          <option value="6">13:00</option><option value="7">14:00</option>
+          <option value="8">15:00</option><option value="9">16:00</option>
+          <option value="10">17:00</option><option value="11">18:00</option>
+          <option value="12">19:00</option><option value="13">20:00</option>
         </select>
       </div>
     </div>
@@ -1163,30 +1097,10 @@ body {
 
     <!-- Estado: idle -->
     <div id="pdf-idle">
-      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
         Subí un PDF de la facu (cronograma, programa, etc.) y la IA va a extraer automáticamente <b style="color:var(--text);">exámenes, parciales y tareas</b> para agregarlos al dashboard.
       </div>
-
-      <!-- API Key input -->
-      <div style="margin-bottom:14px;">
-        <label style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);display:block;margin-bottom:6px;letter-spacing:0.5px;">API KEY DE ANTHROPIC</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="password" id="pdf-apikey-input" placeholder="sk-ant-api03-..."
-            autocomplete="off" spellcheck="false"
-            style="flex:1;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;"
-            oninput="onApiKeyInput()"
-            onfocus="this.style.borderColor='var(--accent)'"
-            onblur="this.style.borderColor='var(--border)'"
-          >
-          <button onclick="toggleApiKeyVis()" title="Mostrar/ocultar"
-            style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--muted);cursor:pointer;font-size:16px;flex-shrink:0;line-height:1;">👁</button>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:5px;line-height:1.5;">
-          Obtené tu clave en <b style="color:var(--accent);">console.anthropic.com</b> → API Keys.<br>No se guarda en ningún servidor ni en el almacenamiento local.
-        </div>
-      </div>
-
-      <div id="pdf-drop-area" style="border:2px dashed var(--border);border-radius:16px;padding:28px 16px;text-align:center;color:var(--muted);margin-bottom:14px;transition:all 0.2s;cursor:pointer;" onclick="document.getElementById('pdf-input2').click()">
+      <div id="pdf-drop-area" style="border:2px dashed var(--border);border-radius:16px;padding:32px 16px;text-align:center;color:var(--muted);margin-bottom:16px;transition:all 0.2s;cursor:pointer;" onclick="document.getElementById('pdf-input2').click()">
         <div style="font-size:32px;margin-bottom:8px;">📄</div>
         <div style="font-size:13px;font-weight:600;">Tocá para seleccionar un PDF</div>
         <div style="font-size:11px;margin-top:4px;" id="pdf-nombre-archivo">Ningún archivo seleccionado</div>
@@ -1259,46 +1173,8 @@ body {
     <!-- Info estado actual -->
     <div id="backup-info" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-align:center;padding:8px;"></div>
 
-    <!-- Resetear -->
-    <div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.2);border-radius:16px;padding:16px;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px;color:var(--danger);">🔄 Restablecer datos por defecto</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Borra todos los datos guardados y carga el horario y materias originales. No se puede deshacer.</div>
-      <button class="mbtn" style="width:100%;background:rgba(248,113,113,0.1);color:var(--danger);border:1px solid rgba(248,113,113,0.25);" onclick="restablecerDatos()">Restablecer todo</button>
-    </div>
-
     <div class="modal-btns" style="margin-top:12px;">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-backup')">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Editar Clase -->
-<div class="modal-overlay" id="modal-edit-clase">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">✏️ <span>Editar clase</span></div>
-
-    <div class="form-group">
-      <label class="form-label">MATERIA</label>
-      <select class="form-input" id="ec-materia"></select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">TIPO DE CLASE</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="tipo-btn active" id="ecbtn-teoria" onclick="setTipoClase('teoria')">📖 Teórica</button>
-        <button class="tipo-btn" id="ecbtn-practica" onclick="setTipoClase('practica')">🔧 Práctica</button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">AULA / EDIFICIO</label>
-      <input class="form-input" id="ec-aula" placeholder="Ej: Aula 12 · Edificio A">
-    </div>
-
-    <div class="modal-btns">
-      <button class="mbtn" style="background:rgba(248,113,113,0.1);color:var(--danger);border:1px solid rgba(248,113,113,0.25);" onclick="eliminarClaseDesdeEdit()">🗑 Eliminar</button>
-      <button class="mbtn mbtn-ok" onclick="guardarEditClase()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1322,55 +1198,38 @@ const DEFAULT_STATE = {
   tareas: [],
   examenes: [],
   horario: [
-    {id:100, materiaId:2, dia:0, hora:4, aula:''},
-    {id:101, materiaId:2, dia:0, hora:5, aula:''},
-    {id:102, materiaId:2, dia:0, hora:6, aula:''},
-    {id:103, materiaId:2, dia:2, hora:2, aula:''},
-    {id:104, materiaId:2, dia:2, hora:3, aula:''},
-    {id:105, materiaId:2, dia:2, hora:4, aula:''},
-    {id:106, materiaId:2, dia:2, hora:5, aula:''},
-    {id:107, materiaId:2, dia:2, hora:6, aula:''},
-    {id:108, materiaId:2, dia:2, hora:7, aula:''},
-    {id:109, materiaId:2, dia:2, hora:8, aula:''},
-    {id:110, materiaId:2, dia:3, hora:2, aula:''},
-    {id:111, materiaId:2, dia:3, hora:3, aula:''},
-    {id:112, materiaId:2, dia:3, hora:4, aula:''},
-    {id:113, materiaId:2, dia:3, hora:5, aula:''},
-    {id:114, materiaId:3, dia:1, hora:2, aula:''},
-    {id:115, materiaId:3, dia:1, hora:3, aula:''},
-    {id:116, materiaId:3, dia:1, hora:4, aula:''},
-    {id:117, materiaId:3, dia:1, hora:5, aula:''},
-    {id:118, materiaId:3, dia:1, hora:6, aula:''},
-    {id:119, materiaId:3, dia:1, hora:7, aula:''},
-    {id:120, materiaId:3, dia:1, hora:8, aula:''},
-    {id:121, materiaId:3, dia:1, hora:9, aula:''},
-    {id:122, materiaId:3, dia:1, hora:10, aula:''},
-    {id:123, materiaId:3, dia:4, hora:8, aula:''},
-    {id:124, materiaId:3, dia:4, hora:9, aula:''},
-    {id:125, materiaId:3, dia:4, hora:10, aula:''},
-    {id:126, materiaId:3, dia:4, hora:11, aula:''},
-    {id:127, materiaId:1, dia:0, hora:8, aula:''},
-    {id:128, materiaId:1, dia:0, hora:9, aula:''},
-    {id:129, materiaId:1, dia:0, hora:10, aula:''},
-    {id:130, materiaId:1, dia:2, hora:8, aula:''},
-    {id:131, materiaId:1, dia:2, hora:9, aula:''},
-    {id:132, materiaId:1, dia:2, hora:10, aula:''},
-    {id:133, materiaId:1, dia:3, hora:6, aula:''},
-    {id:134, materiaId:1, dia:3, hora:7, aula:''},
-    {id:135, materiaId:1, dia:3, hora:8, aula:''},
-    {id:136, materiaId:1, dia:3, hora:9, aula:''},
-    {id:137, materiaId:1, dia:3, hora:10, aula:''},
-    {id:138, materiaId:1, dia:3, hora:11, aula:''},
-    {id:139, materiaId:1, dia:4, hora:8, aula:''},
-    {id:140, materiaId:1, dia:4, hora:9, aula:''},
-    {id:141, materiaId:1, dia:4, hora:10, aula:''},
-    {id:142, materiaId:4, dia:1, hora:14, aula:''},
-    {id:143, materiaId:4, dia:1, hora:15, aula:''},
-    {id:144, materiaId:4, dia:1, hora:16, aula:''},
-    {id:145, materiaId:4, dia:1, hora:17, aula:''},
-    {id:146, materiaId:4, dia:1, hora:18, aula:''},
-    {id:147, materiaId:4, dia:1, hora:19, aula:''},
-    {id:148, materiaId:4, dia:1, hora:20, aula:''}
+    // ─── ANÁLISIS MATEMÁTICO I (id:2 → MCT-102) ───
+    {id:101, materiaId:2, dia:1, hora:1, aula:'AM'},   // Mar 8-9
+    {id:102, materiaId:2, dia:1, hora:2, aula:'AM'},   // Mar 9-10
+    {id:103, materiaId:2, dia:1, hora:3, aula:'AM'},   // Mar 10-11
+    {id:104, materiaId:2, dia:2, hora:1, aula:'AM'},   // Mié 8-9
+    {id:105, materiaId:2, dia:2, hora:2, aula:'AM'},   // Mié 9-10
+    {id:106, materiaId:2, dia:2, hora:3, aula:'AM'},   // Mié 10-11
+    {id:107, materiaId:2, dia:3, hora:1, aula:'AM'},   // Jue 8-9
+    {id:108, materiaId:2, dia:3, hora:2, aula:'(9:30)'},// Jue 9-9:30
+    {id:109, materiaId:2, dia:0, hora:2, aula:'AM'},   // Lun 9-10
+    {id:110, materiaId:2, dia:0, hora:3, aula:'(10:30)'},// Lun 10-10:30
+
+    // ─── GEOMETRÍA ANALÍTICA (id:3 → MCT-103) ───
+    {id:201, materiaId:3, dia:1, hora:1, aula:'GA'},   // Mar 8-9
+    {id:202, materiaId:3, dia:1, hora:2, aula:'GA'},   // Mar 9-10
+    {id:203, materiaId:3, dia:1, hora:3, aula:'GA'},   // Mar 10-11
+    {id:204, materiaId:3, dia:1, hora:4, aula:'GA'},   // Mar 11-12
+    {id:205, materiaId:3, dia:3, hora:3, aula:'GA'},   // Jue 10-11
+    {id:206, materiaId:3, dia:3, hora:4, aula:'GA'},   // Jue 11-12
+    {id:207, materiaId:3, dia:4, hora:4, aula:'GA'},   // Vie 11-12
+    {id:208, materiaId:3, dia:4, hora:5, aula:'GA'},   // Vie 12-13
+
+    // ─── ÁLGEBRA (id:1 → MCT-101) ───
+    {id:301, materiaId:1, dia:0, hora:4, aula:'Alg'},  // Lun 11-12
+    {id:302, materiaId:1, dia:0, hora:5, aula:'Alg'},  // Lun 12-13
+    {id:303, materiaId:1, dia:2, hora:4, aula:'Alg'},  // Mié 11-12
+    {id:304, materiaId:1, dia:3, hora:4, aula:'Alg'},  // Jue 11-12
+    {id:305, materiaId:1, dia:3, hora:5, aula:'Alg'},  // Jue 12-13
+
+    // ─── INTRODUCCIÓN A LA INGENIERÍA (id:4 → MCT-104) ───
+    {id:401, materiaId:4, dia:1, hora:7, aula:'14-16hs'},  // Mar 14-16
+    {id:402, materiaId:4, dia:2, hora:7, aula:'14-15hs'},  // Mié 14-15
   ]
 };
 
@@ -1378,14 +1237,6 @@ const DEFAULT_STATE = {
 const APP_VERSION = 'v10';
 
 // ── EXPORT / IMPORT ──
-function restablecerDatos() {
-  if (!confirm('¿Restablecer todos los datos por defecto?\nSe borrarán tus notas, tareas, exámenes y horario guardados.')) return;
-  localStorage.removeItem('ing1-state');
-  localStorage.removeItem('ing1-plan');
-  localStorage.removeItem('ing1-lastSave');
-  location.reload();
-}
-
 function exportarDatos() {
   const backup = {
     version:   APP_VERSION,
@@ -1431,7 +1282,7 @@ function importarDatos(input) {
       if (data.planState) savePlanState(data.planState);
       closeModal('modal-backup');
       render();
-      showToast('📥 Datos importados · horario actualizado al nuevo formato ✅', 3500);
+      showToast('📥 Datos importados correctamente ✅');
     } catch(err) {
       showToast('❌ Error al leer el archivo', 3500);
     }
@@ -1513,8 +1364,12 @@ function prom(m){
   const ns=[m.n1,m.n2,m.nf].filter(n=>n!=null);
   return ns.length?(ns.reduce((a,b)=>a+b,0)/ns.length).toFixed(1):null;
 }
-function nColor(n){ return n==null?'':n>=7?'ok':n>=4?'med':'mal'; }
-function diasHasta(f){ const h=new Date();h.setHours(0,0,0,0);return Math.ceil((new Date(f+'T12:00')-h)/86400000); }
+function nColor(n){ return n==null?'':n>=70?'ok':n>=60?'med':'mal'; }
+function diasHasta(f){
+  const h=new Date(); h.setHours(0,0,0,0);
+  const t=new Date(f+'T12:00'); t.setHours(0,0,0,0);
+  return Math.round((t-h)/86400000);
+}
 function urgBadge(dias,done){
   if(done) return {cls:'bo',txt:'✓ Lista'};
   if(dias<0) return {cls:'bu',txt:'Vencida'};
@@ -1606,7 +1461,7 @@ function rMaterias(){
     return;
   }
   el.innerHTML = state.materias.map(m=>{
-    const p=prom(m); const prog=p?Math.min(100,(p/10)*100):0;
+    const p=prom(m); const prog=p?Math.min(100, parseFloat(p)):0;
     const col=colorCSS(m.color);
 
     const estadoMap = {
@@ -1657,72 +1512,19 @@ function filtrar(f,el){
   rTareas();
 }
 
-function disponibilidadAutoeval(t) {
-  const ahora = new Date();
-  const abre  = t.abreFecha ? new Date(t.abreFecha + 'T' + (t.abreHora||'00:00')) : null;
-  const cierra= t.cierraFecha ? new Date(t.cierraFecha + 'T' + (t.cierraHora||'23:59')) : null;
-  if (abre && ahora < abre) return { estado:'futura', label:'Aún no abre' };
-  if (cierra && ahora > cierra) return { estado:'cerrada', label:'Cerrada' };
-  if (abre || cierra) return { estado:'abierta', label:'Disponible' };
-  return { estado:'abierta', label:'Disponible' };
-}
-
-function fmtDateHora(fecha, hora) {
-  if (!fecha) return null;
-  const d = new Date(fecha + 'T' + (hora||'00:00'));
-  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'}) + (hora ? ' ' + hora : '');
-}
-
 function rTareas(){
   const lista=document.getElementById('tareas-list');
   if(!lista) return;
-  let ts=[...state.tareas].sort((a,b)=>{
-    const fa = a.abreFecha||a.fecha||'9999';
-    const fb = b.abreFecha||b.fecha||'9999';
-    return fa.localeCompare(fb);
-  });
+  let ts=[...state.tareas].sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
   if(filtroActual==='pendientes') ts=ts.filter(t=>!t.completada);
   if(filtroActual==='completadas') ts=ts.filter(t=>t.completada);
   if(filtroActual==='urgentes') ts=ts.filter(t=>!t.completada&&diasHasta(t.fecha)<=7);
-  if(filtroActual==='autoeval') ts=ts.filter(t=>t.tipo==='autoeval');
   if(!ts.length){
     lista.innerHTML=`<div class="empty-state"><span class="icon">🎉</span>¡Sin tareas aquí!</div>`;
     return;
   }
   lista.innerHTML=ts.map(t=>{
     const mat=getM(t.materiaId);
-    const esAutoeval = t.tipo === 'autoeval';
-
-    if (esAutoeval) {
-      const disp = disponibilidadAutoeval(t);
-      const clsDisp = {abierta:'db-abierta',futura:'db-futura',cerrada:'db-cerrada'}[disp.estado];
-      const abreStr   = fmtDateHora(t.abreFecha, t.abreHora);
-      const cierraStr = fmtDateHora(t.cierraFecha, t.cierraHora);
-      let metaPartes = [];
-      if (t.intentos)  metaPartes.push(`${t.intentos} intento${t.intentos>1?'s':''}`);
-      if (t.tiempo)    metaPartes.push(`⏱ ${t.tiempo} ${t.tiempoUnit||'min'}`);
-      if (abreStr)     metaPartes.push(`🟢 ${abreStr}`);
-      if (cierraStr)   metaPartes.push(`🔴 ${cierraStr}`);
-      return `<div class="tarea-row ${t.completada?'done-row':''}" style="flex-wrap:wrap;gap:8px;">
-        <div class="tcheck ${t.completada?'on':''}" onclick="toggleT(${t.id})" style="align-self:flex-start;margin-top:2px;">${t.completada?'✓':''}</div>
-        <div class="tarea-info" style="min-width:0;flex:1;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="tarea-titulo" style="${t.completada?'text-decoration:line-through':''}">${t.titulo}</span>
-            <span class="autoeval-badge">🧠 Autoevaluación</span>
-          </div>
-          <div class="tarea-meta" style="margin-top:2px;">${mat?mat.nombre:'—'}</div>
-          ${metaPartes.length ? `<div class="autoeval-info">${metaPartes.join(' · ')}</div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <span class="disponibilidad-badge ${clsDisp}">${disp.label}</span>
-          <div class="tarea-actions">
-            <button class="edit-btn" onclick="editarTarea(${t.id})">✏️</button>
-            <button class="del-btn" onclick="eliminarT(${t.id})">×</button>
-          </div>
-        </div>
-      </div>`;
-    }
-
     const dias=diasHasta(t.fecha);
     const u=urgBadge(dias,t.completada);
     const fecha=new Date(t.fecha+'T12:00').toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
@@ -1787,65 +1589,54 @@ function rExamenes() {
   }).join('');
 }
 
-function idxToLabel(i) {
-  const h = 7 + Math.floor(i / 2);
-  const m = i % 2 === 0 ? '00' : '30';
-  return String(h).padStart(2,'0') + ':' + m;
-}
-
 function rHorario(){
   const g=document.getElementById('horario-grid');
   if(!g) return;
 
-  // idx: 0=07:00, 1=07:30, 2=08:00, 3=08:30, ..., 26=20:00, 27=20:30
-  const idxUsados = state.horario.map(x => x.hora);
-  const minIdx = idxUsados.length ? Math.max(0, Math.min(...idxUsados) - 1) : 2;
-  const maxIdx = idxUsados.length ? Math.min(27, Math.max(...idxUsados) + 1) : 20;
-  const SLOTS = [];
-  for(let i = minIdx; i <= maxIdx; i++) SLOTS.push(i);
+  // Solo mostrar horas con contenido + rango útil (8:00 - 16:00 = índices 1..9)
+  const HORAS_SHOW = [1,2,3,4,5,6,7,8,9]; // 08 a 16
+  const HORAS_ALL  = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
 
   let html='<div></div>';
   DIAS.forEach(d=>html+=`<div class="hcell-head">${d}</div>`);
 
-  SLOTS.forEach(hi=>{
-    const lbl = idxToLabel(hi);
-    const esEnPunto = hi % 2 === 0;
-    html += `<div class="hcell-hora" style="height:36px;${esEnPunto ? '' : 'opacity:0.45;font-size:8px;'}">${lbl}</div>`;
+  HORAS_SHOW.forEach(hi=>{
+    html+=`<div class="hcell-hora">${HORAS_ALL[hi]}</div>`;
     for(let di=0;di<5;di++){
       const clases=state.horario.filter(x=>x.dia===di && x.hora===hi);
       if(clases.length===0){
-        html+=`<div class="hcell empty" style="height:36px;"></div>`;
+        html+=`<div class="hcell empty"></div>`;
       } else if(clases.length===1){
         const c=clases[0];
         const m=getM(c.materiaId);
         const nc=m?`c-${m.color}`:'c-verde';
         const short=m?m.nombre.split(' ')[0].substring(0,5):'?';
-        const tipoBadge = c.tipo === 'practica' ? '<span style="font-size:7px;opacity:0.8;">PRÁCT</span>' : '<span style="font-size:7px;opacity:0.8;">TEÓR</span>';
-        const aulaLbl = c.aula && c.aula !== '—' ? `<span class="hcell-aula">${c.aula}</span>` : '';
-        html+=`<div class="hcell ${nc}" style="height:36px;" onclick="delClase(${c.id})" title="Tocar para editar">
-          <span style="font-size:9px;font-weight:700;">${short}</span>
-          ${aulaLbl || tipoBadge}
+        html+=`<div class="hcell ${nc}" onclick="delClase(${c.id})" title="Tap para eliminar">
+          <span>${short}</span>
+          <span class="hcell-aula">${c.aula}</span>
         </div>`;
       } else {
+        // Múltiples materias en el mismo bloque: mostrar apiladas
         const inner = clases.map(c=>{
           const m=getM(c.materiaId);
           const nc=m?`c-${m.color}`:'c-verde';
           const short=m?m.nombre.split(' ')[0].substring(0,4):'?';
           return `<div class="hcell-multi ${nc}" onclick="delClase(${c.id})" title="Tap para eliminar">${short}</div>`;
         }).join('');
-        html+=`<div class="hcell" style="height:36px;flex-direction:column;gap:1px;padding:1px;background:var(--panel2);border-color:var(--border);">${inner}</div>`;
+        html+=`<div class="hcell" style="flex-direction:column;gap:1px;padding:1px;background:var(--panel2);border-color:var(--border);">${inner}</div>`;
       }
     }
   });
   g.innerHTML=html;
 }
+
 function rAvance(){
   const sr=document.getElementById('stat-row');
   const bs=document.getElementById('barras');
   const dl=document.getElementById('donut-legend');
   if(!sr) return;
   const total=state.materias.length;
-  const aprobadas=state.materias.filter(m=>{const p=prom(m);return p&&parseFloat(p)>=4;}).length;
+  const aprobadas=state.materias.filter(m=>{const p=prom(m);return p&&parseFloat(p)>=60;}).length;
   const ps=state.materias.map(m=>parseFloat(prom(m)||0)).filter(p=>p>0);
   const pg=ps.length?(ps.reduce((a,b)=>a+b,0)/ps.length).toFixed(1):'—';
   const pend=state.tareas.filter(t=>!t.completada).length;
@@ -1871,7 +1662,7 @@ function rAvance(){
 
   if(dl) dl.innerHTML=state.materias.map(m=>{
     const p=prom(m);
-    const ap=p&&parseFloat(p)>=4;
+    const ap=p&&parseFloat(p)>=60;
     return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span>${!p?'⏳':ap?'✅':'❌'}</span>
       <span style="font-size:13px;font-weight:500;">${m.nombre}</span>
@@ -1885,9 +1676,9 @@ function rAvance(){
     return `<div class="barra-row">
       <div class="barra-info">
         <span class="barra-name">${m.nombre}</span>
-        <span class="barra-val" style="color:${col};">${p||'—'}/10</span>
+        <span class="barra-val" style="color:${col};">${p||'—'}/100</span>
       </div>
-      <div class="barra-wrap"><div class="barra-fill" style="width:${(p/10)*100}%;background:${col};"></div></div>
+      <div class="barra-wrap"><div class="barra-fill" style="width:${p?Math.min(100,parseFloat(p)):0}%;background:${col};"></div></div>
     </div>`;
   }).join('');
 }
@@ -2214,7 +2005,6 @@ function openModal(id) {
   }
   if(id==='modal-tarea' && !editingTareaId) {
     document.getElementById('modal-tarea-title').innerHTML='Nueva <span>tarea</span>';
-    setTipoTarea('tarea');
   }
   if(id==='modal-backup') {
     actualizarInfoBackup();
@@ -2228,7 +2018,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 });
 
 function fillSelects(){
-  ['t-materia','c-materia','e-materia','ec-materia'].forEach(id=>{
+  ['t-materia','c-materia','e-materia'].forEach(id=>{
     const s=document.getElementById(id);
     if(s) s.innerHTML=state.materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
   });
@@ -2249,25 +2039,23 @@ function parseNota(val) {
   if (val === '' || val === null || val === undefined) return null;
   const n = parseFloat(val);
   if (isNaN(n)) return null;
-  return Math.min(10, Math.max(0, Math.round(n * 10) / 10));
+  return Math.min(100, Math.max(0, Math.round(n)));
 }
 
 // ── CÁLCULO AUTOMÁTICO DE ESTADO ──
-// Promoción: ambos parciales ≥ 7 y promedio ≥ 7
-// Regular: ambos parciales ≥ 4 (puede rendir final)
-// Si el usuario elige manualmente un estado, ese prevalece — solo
-// auto-calculamos cuando el estado actual es 'cursando' o no encaja con notas
+// Regular: ambos parciales ≥ 60 → puede rendir final
+// Promoción: no aplica con escala 0-100 (la facultad no promociona en este sistema)
+// El usuario puede fijar el estado manualmente
 function calcularEstadoAuto(n1, n2, nf, estadoActual) {
-  // Si el usuario fijó un estado manual no-cursando, respetarlo
   if (['aprobada','libre','pendiente'].includes(estadoActual)) return estadoActual;
 
   if (n1 !== null && n2 !== null) {
-    const prom12 = (n1 + n2) / 2;
-    if (n1 >= 7 && n2 >= 7 && prom12 >= 7) return 'promocion';  // ⭐ Promoción directa
-    if (n1 >= 4 && n2 >= 4) {
-      if (nf !== null) return nf >= 4 ? 'aprobada' : 'cursando'; // Aprobó o reprobó final
-      return 'sinpromoc'; // Regular, falta rendir final
+    const ambosRegulares = n1 >= 60 && n2 >= 60;
+    if (ambosRegulares) {
+      if (nf !== null) return nf >= 60 ? 'aprobada' : 'cursando';
+      return 'sinpromoc'; // Regular → debe rendir final
     }
+    // Si alguno < 60, sigue cursando (libre en el peor caso pero el usuario lo elige)
   }
   return 'cursando';
 }
@@ -2284,8 +2072,8 @@ function guardarMateria(){
 
   // Validar rango por JS (min/max HTML no valida en .value)
   for (const [lbl, v] of [['1° Parcial', n1],['2° Parcial', n2],['Final', nf]]) {
-    if (v !== null && (v < 0 || v > 10)) {
-      showToast(`⚠️ ${lbl}: la nota debe estar entre 0 y 10`); return;
+    if (v !== null && (v < 0 || v > 100)) {
+      showToast(`⚠️ ${lbl}: la nota debe estar entre 0 y 100`); return;
     }
   }
 
@@ -2337,57 +2125,27 @@ window.eliminarMateria=function(id){
 };
 
 // ── ACCIONES TAREAS ──
-let tipoTareaActual = 'tarea';
-
-function setTipoTarea(tipo) {
-  tipoTareaActual = tipo;
-  document.getElementById('tbtn-tarea').classList.toggle('active', tipo === 'tarea');
-  document.getElementById('tbtn-autoeval').classList.toggle('active', tipo === 'autoeval');
-  document.getElementById('autoeval-fields').style.display = tipo === 'autoeval' ? 'block' : 'none';
-  document.getElementById('tarea-fecha-wrap').style.display = tipo === 'autoeval' ? 'none' : 'block';
-}
-
 function guardarTarea(){
   const titulo = sanitize(document.getElementById('t-titulo').value);
-  const esAE   = tipoTareaActual === 'autoeval';
-  const fecha  = esAE ? (document.getElementById('t-cierra-fecha').value || document.getElementById('t-abre-fecha').value) : document.getElementById('t-fecha').value;
+  const fecha  = document.getElementById('t-fecha').value;
   if(!titulo){ showToast('⚠️ Ingresá un título válido'); return; }
-  if(!esAE && !fecha){ showToast('⚠️ Seleccioná una fecha'); return; }
-
-  const base = {
-    titulo,
-    materiaId: parseInt(document.getElementById('t-materia').value),
-    fecha: fecha || null,
-    completada: false,
-    tipo: tipoTareaActual,
-  };
-
-  if (esAE) {
-    const intentos = document.getElementById('t-intentos').value;
-    const tiempo   = document.getElementById('t-tiempo').value;
-    const tUnit    = document.getElementById('t-tiempo-unit').value;
-    const abreFecha   = document.getElementById('t-abre-fecha').value;
-    const abreHora    = document.getElementById('t-abre-hora').value;
-    const cierraFecha = document.getElementById('t-cierra-fecha').value;
-    const cierraHora  = document.getElementById('t-cierra-hora').value;
-    if (intentos) base.intentos = parseInt(intentos);
-    if (tiempo)   { base.tiempo = parseInt(tiempo); base.tiempoUnit = tUnit; }
-    if (abreFecha)   base.abreFecha   = abreFecha;
-    if (abreHora)    base.abreHora    = abreHora;
-    if (cierraFecha) base.cierraFecha = cierraFecha;
-    if (cierraHora)  base.cierraHora  = cierraHora;
-  }
-
+  if(!fecha){  showToast('⚠️ Seleccioná una fecha'); return; }
   if(editingTareaId){
-    state.tareas = state.tareas.map(t => t.id===editingTareaId ? { ...t, ...base } : t);
-    showToast('✅ ' + (esAE ? 'Autoevaluación' : 'Tarea') + ' actualizada');
+    state.tareas = state.tareas.map(t => t.id===editingTareaId ? {
+      ...t, titulo,
+      materiaId:parseInt(document.getElementById('t-materia').value),
+      fecha
+    } : t);
+    showToast('✅ Tarea actualizada');
   } else {
-    state.tareas.push({ id: Date.now(), ...base });
-    showToast('✅ ' + (esAE ? 'Autoevaluación' : 'Tarea') + ' agregada');
+    state.tareas.push({
+      id:Date.now(), titulo,
+      materiaId:parseInt(document.getElementById('t-materia').value),
+      fecha, completada:false
+    });
+    showToast('✅ Tarea agregada');
   }
-  ['t-titulo','t-fecha','t-desc','t-intentos','t-tiempo','t-abre-fecha','t-abre-hora','t-cierra-fecha','t-cierra-hora'].forEach(id=>{
-    const el = document.getElementById(id); if(el) el.value='';
-  });
+  ['t-titulo','t-fecha','t-desc'].forEach(id=>document.getElementById(id).value='');
   closeModal('modal-tarea');
   saveState(); render();
 }
@@ -2396,24 +2154,11 @@ window.editarTarea=function(id){
   const t=state.tareas.find(x=>x.id===id);
   if(!t) return;
   editingTareaId=id;
-  const esAE = t.tipo === 'autoeval';
-  document.getElementById('modal-tarea-title').innerHTML='Editar <span>' + (esAE ? 'autoevaluación' : 'tarea') + '</span>';
+  document.getElementById('modal-tarea-title').innerHTML='Editar <span>tarea</span>';
   fillSelects();
-  // Resetear tipo
-  setTipoTarea(t.tipo || 'tarea');
-  document.getElementById('t-titulo').value = t.titulo;
-  document.getElementById('t-materia').value = t.materiaId;
-  if (esAE) {
-    document.getElementById('t-intentos').value  = t.intentos || '';
-    document.getElementById('t-tiempo').value    = t.tiempo || '';
-    document.getElementById('t-tiempo-unit').value = t.tiempoUnit || 'min';
-    document.getElementById('t-abre-fecha').value   = t.abreFecha || '';
-    document.getElementById('t-abre-hora').value    = t.abreHora || '';
-    document.getElementById('t-cierra-fecha').value = t.cierraFecha || '';
-    document.getElementById('t-cierra-hora').value  = t.cierraHora || '';
-  } else {
-    document.getElementById('t-fecha').value = t.fecha || '';
-  }
+  document.getElementById('t-titulo').value=t.titulo;
+  document.getElementById('t-fecha').value=t.fecha;
+  document.getElementById('t-materia').value=t.materiaId;
   openModal('modal-tarea');
 };
 
@@ -2470,51 +2215,11 @@ function guardarClase(){
   saveState(); render();
 }
 
-let editingClaseId = null;
-
-window.delClase = function(id) {
-  editingClaseId = id;
-  const c = state.horario.find(x => x.id === id);
-  if (!c) return;
-  const m = getM(c.materiaId);
-  // Llenar select y seleccionar la materia actual
-  fillSelects();
-  document.getElementById('ec-materia').value = c.materiaId;
-  // Cargar aula guardada
-  document.getElementById('ec-aula').value = (c.aula && c.aula !== '—') ? c.aula : '';
-  // Cargar tipo
-  setTipoClase(c.tipo || 'teoria');
-  document.getElementById('modal-edit-clase').classList.add('open');
+window.delClase=function(id){
+  if(!confirm('¿Eliminar esta clase del horario?')) return;
+  state.horario=state.horario.filter(c=>c.id!==id);
+  saveState(); render();
 };
-
-function setTipoClase(tipo) {
-  document.getElementById('ecbtn-teoria').classList.toggle('active', tipo === 'teoria');
-  document.getElementById('ecbtn-practica').classList.toggle('active', tipo === 'practica');
-  document.getElementById('modal-edit-clase').dataset.tipo = tipo;
-}
-
-function guardarEditClase() {
-  if (!editingClaseId) return;
-  const aula     = document.getElementById('ec-aula').value.trim() || '';
-  const tipo     = document.getElementById('modal-edit-clase').dataset.tipo || 'teoria';
-  const materiaId = parseInt(document.getElementById('ec-materia').value);
-  state.horario = state.horario.map(c =>
-    c.id === editingClaseId ? { ...c, aula, tipo, materiaId } : c
-  );
-  document.getElementById('modal-edit-clase').classList.remove('open');
-  editingClaseId = null;
-  showToast('✅ Clase actualizada');
-  saveState(); render();
-}
-
-function eliminarClaseDesdeEdit() {
-  if (!editingClaseId) return;
-  if (!confirm('¿Eliminar esta clase del horario?')) return;
-  state.horario = state.horario.filter(c => c.id !== editingClaseId);
-  document.getElementById('modal-edit-clase').classList.remove('open');
-  editingClaseId = null;
-  saveState(); render();
-}
 
 // ── CALENDARIO ACADÉMICO 2026-2027 ──
 const CAL_RANGOS = [
@@ -2659,16 +2364,6 @@ function rCal() {
 
 // ── PDF SCANNER CON IA ──
 let pdfFile = null;
-
-function toggleApiKeyVis() {
-  const inp = document.getElementById('pdf-apikey-input');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-}
-
-function onApiKeyInput() {
-  actualizarBtnAnalizar();
-}
-
 let iaResultados = [];
 
 function abrirScannerPDF(input) {
@@ -2695,16 +2390,10 @@ function actualizarNombreArchivo(nombre) {
 }
 
 function habilitarBotonAnalizar(on) {
-  actualizarBtnAnalizar();
-}
-
-function actualizarBtnAnalizar() {
   const btn = document.getElementById('pdf-btn-analizar');
   if (!btn) return;
-  const apiKey = (document.getElementById('pdf-apikey-input')?.value || '').trim();
-  const listo = pdfFile && apiKey.startsWith('sk-ant-');
-  btn.style.opacity = listo ? '1' : '0.4';
-  btn.style.pointerEvents = listo ? 'auto' : 'none';
+  btn.style.opacity = on ? '1' : '0.4';
+  btn.style.pointerEvents = on ? 'auto' : 'none';
 }
 
 function setPDFEstado(estado) {
@@ -2731,11 +2420,6 @@ function resetScanner() {
 
 async function analizarPDF() {
   if (!pdfFile) return;
-  const apiKey = (document.getElementById('pdf-apikey-input')?.value || '').trim();
-  if (!apiKey.startsWith('sk-ant-')) {
-    showToast('⚠️ Ingresá una API Key válida de Anthropic');
-    return;
-  }
   setPDFEstado('loading');
 
   const base64 = await new Promise((res, rej) => {
@@ -2786,12 +2470,7 @@ No inventes fechas. Si una fecha no es legible, no incluyas el item.`;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
