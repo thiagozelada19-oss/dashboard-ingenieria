@@ -1047,7 +1047,7 @@ body {
 <div class="modal-overlay" id="modal-clase">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Agregar <span>clase</span></div>
+    <div class="modal-title" id="modal-clase-title">Agregar <span>clase</span></div>
     <div class="form-group">
       <label class="form-label">MATERIA</label>
       <select class="form-input" id="c-materia"></select>
@@ -1093,7 +1093,8 @@ body {
       </select>
     </div>
     <div class="modal-btns">
-      <button class="mbtn mbtn-cancel" onclick="closeModal('modal-clase')">Cancelar</button>
+      <button class="mbtn mbtn-cancel" id="c-btn-eliminar" style="display:none;background:rgba(248,113,113,0.1);color:var(--danger);border:1px solid rgba(248,113,113,0.2);" onclick="eliminarClaseDesdeModal()">🗑️ Eliminar</button>
+      <button class="mbtn mbtn-cancel" id="c-btn-cancelar" onclick="closeModal('modal-clase')">Cancelar</button>
       <button class="mbtn mbtn-ok" onclick="guardarClase()">Guardar</button>
     </div>
   </div>
@@ -1707,21 +1708,63 @@ function rHorario(){
   g.innerHTML = html;
 }
 
+let editingClaseId = null;
+
 window.accionClase = function(id) {
   const c = state.horario.find(x => x.id === id);
   if (!c) return;
-  const m = getM(c.materiaId);
-  const nombre = m ? m.nombre : 'Clase';
-  const SLOTS = ['07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'];
-  const hora = SLOTS[c.hora] || '';
-  const tipoStr = c.tipo === 'practica' ? ' · Práctica' : c.tipo === 'teoria' ? ' · Teoría' : '';
-  const aulaStr = c.aula && c.aula !== '—' ? ` · ${c.aula}` : '';
-  if (confirm(`${nombre}\n${hora}hs${tipoStr}${aulaStr}\n\n¿Eliminar esta clase?`)) {
-    state.horario = state.horario.filter(x => x.id !== id);
-    showToast('🗑️ Clase eliminada');
-    saveState(); render();
-  }
+  editingClaseId = id;
+
+  // Primero abrir el modal (que también llama fillSelects por ser edición)
+  fillSelects();
+  document.getElementById('modal-clase-title').innerHTML = 'Editar <span>clase</span>';
+  document.getElementById('c-btn-eliminar').style.display = '';
+
+  // Abrir modal
+  document.getElementById('modal-clase').classList.add('open');
+
+  // Setear valores DESPUÉS de que el modal y los options estén en el DOM
+  requestAnimationFrame(() => {
+    document.getElementById('c-materia').value = c.materiaId;
+    document.getElementById('c-dia').value     = c.dia;
+    document.getElementById('c-hora').value    = c.hora;
+    document.getElementById('c-aula').value    = c.aula && c.aula !== '—' ? c.aula : '';
+    document.getElementById('c-tipo').value    = c.tipo || '';
+  });
 };
+
+function eliminarClaseDesdeModal() {
+  if (!editingClaseId) return;
+  state.horario = state.horario.filter(x => x.id !== editingClaseId);
+  editingClaseId = null;
+  closeModal('modal-clase');
+  showToast('🗑️ Clase eliminada');
+  saveState(); render();
+}
+
+function guardarClase(){
+  const matId = parseInt(document.getElementById('c-materia').value);
+  const dia   = parseInt(document.getElementById('c-dia').value);
+  const hora  = parseInt(document.getElementById('c-hora').value);
+  const aula  = sanitize(document.getElementById('c-aula').value.trim()) || '';
+  const tipo  = document.getElementById('c-tipo').value || '';
+
+  if (editingClaseId) {
+    state.horario = state.horario.map(c =>
+      c.id === editingClaseId ? { ...c, materiaId:matId, dia, hora, aula, tipo } : c
+    );
+    showToast('✅ Clase actualizada');
+  } else {
+    state.horario.push({ id:Date.now(), materiaId:matId, dia, hora, aula, tipo });
+    showToast('🗓️ Clase agregada');
+  }
+
+  document.getElementById('c-aula').value = '';
+  document.getElementById('c-tipo').value = '';
+  editingClaseId = null;
+  closeModal('modal-clase');
+  saveState(); render();
+}
 
 function rAvance(){
   const sr=document.getElementById('stat-row');
@@ -2092,19 +2135,29 @@ function rCorr() {
 
 // ── MODALES ──
 function openModal(id) {
-  fillSelects();
+  // Solo rellenar selects si NO estamos abriendo modal-clase en modo edición
+  // (en ese caso accionClase ya hizo fillSelects y seteo los valores)
+  if (!(id === 'modal-clase' && editingClaseId)) {
+    fillSelects();
+  }
   if(id==='modal-materia' && !editingMateriaId) {
     document.getElementById('modal-materia-title').innerHTML='Nueva <span>materia</span>';
   }
   if(id==='modal-tarea' && !editingTareaId) {
     document.getElementById('modal-tarea-title').innerHTML='Nueva <span>tarea</span>';
   }
+  if(id==='modal-clase' && !editingClaseId) {
+    document.getElementById('modal-clase-title').innerHTML='Agregar <span>clase</span>';
+    document.getElementById('c-btn-eliminar').style.display = 'none';
+    document.getElementById('c-aula').value = '';
+    document.getElementById('c-tipo').value = '';
+  }
   if(id==='modal-backup') {
     actualizarInfoBackup();
   }
   document.getElementById(id).classList.add('open');
 }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
@@ -2295,20 +2348,6 @@ window.eliminarExamen=function(id){
 };
 
 // ── ACCIONES HORARIO ──
-function guardarClase(){
-  const matId=parseInt(document.getElementById('c-materia').value);
-  const dia=parseInt(document.getElementById('c-dia').value);
-  const hora=parseInt(document.getElementById('c-hora').value);
-  const aula=sanitize(document.getElementById('c-aula').value.trim())||'—';
-  const tipo=document.getElementById('c-tipo').value||'';
-  state.horario.push({id:Date.now(), materiaId:matId, dia, hora, aula, tipo});
-  document.getElementById('c-aula').value='';
-  document.getElementById('c-tipo').value='';
-  closeModal('modal-clase');
-  showToast('🗓️ Clase agregada');
-  saveState(); render();
-}
-
 // delClase es manejado por accionClase()
 
 // ── CALENDARIO ACADÉMICO 2026-2027 ──
