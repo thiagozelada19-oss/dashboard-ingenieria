@@ -311,41 +311,39 @@ body {
 /* ── HORARIO ── */
 .horario-wrap { position: relative; }
 .horario-scroll { overflow-x:auto; padding-bottom:8px; }
-.horario-scroll::after {
-  content:'';
-  position:absolute; top:0; right:0; bottom:8px; width:28px;
-  background: linear-gradient(to right, transparent, var(--panel));
-  pointer-events:none; border-radius:0 16px 16px 0;
-}
 .hgrid {
   display:grid;
-  grid-template-columns: 44px repeat(5,minmax(62px,1fr));
-  gap:3px;
-  min-width: 360px;
+  grid-template-columns: 46px repeat(5,minmax(58px,1fr));
+  gap:2px;
+  min-width: 340px;
 }
 .hcell-head {
   text-align:center; font-family:'Space Mono',monospace; font-size:10px;
   color:var(--muted); padding:8px 2px; font-weight:700;
 }
 .hcell-hora {
-  font-family:'Space Mono',monospace; font-size:9px; color:var(--muted);
+  font-family:'Space Mono',monospace; font-size:8px; color:var(--muted);
   display:flex; align-items:center; justify-content:flex-end;
-  padding-right:4px; height:50px;
+  padding-right:5px; height:36px;
 }
+.hcell-hora.half { color: rgba(100,116,139,0.45); font-size:7px; }
 .hcell {
-  height:50px; border-radius:10px;
+  height:36px; border-radius:8px;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  font-size:10px; font-weight:700; text-align:center; padding:2px;
-  border:1px solid transparent;
+  font-size:9px; font-weight:700; text-align:center; padding:2px;
+  border:1px solid transparent; cursor:pointer; transition: opacity 0.15s;
 }
-.hcell.empty { background:var(--panel2); border-color:var(--border); }
-.hcell.c-verde  { background:rgba(94,234,212,0.12); border-color:rgba(94,234,212,0.3); color:var(--accent); }
-.hcell.c-azul   { background:rgba(129,140,248,0.12); border-color:rgba(129,140,248,0.3); color:var(--accent2); }
-.hcell.c-naranja{ background:rgba(251,146,60,0.12); border-color:rgba(251,146,60,0.3); color:var(--accent3); }
-.hcell.c-rosa   { background:rgba(244,114,182,0.12); border-color:rgba(244,114,182,0.3); color:var(--accent4); }
-.hcell-aula { font-size:8px; opacity:0.7; font-family:'Space Mono',monospace; }
+.hcell:active { opacity:0.7; }
+.hcell.empty { background:var(--panel2); border-color:var(--border); cursor:default; }
+.hcell.half-empty { background:rgba(24,28,39,0.5); border-color:rgba(30,35,52,0.5); cursor:default; }
+.hcell.c-verde  { background:rgba(94,234,212,0.13); border-color:rgba(94,234,212,0.32); color:var(--accent); }
+.hcell.c-azul   { background:rgba(129,140,248,0.13); border-color:rgba(129,140,248,0.32); color:var(--accent2); }
+.hcell.c-naranja{ background:rgba(251,146,60,0.13); border-color:rgba(251,146,60,0.32); color:var(--accent3); }
+.hcell.c-rosa   { background:rgba(244,114,182,0.13); border-color:rgba(244,114,182,0.32); color:var(--accent4); }
+.hcell-tipo { font-size:7px; opacity:0.75; font-family:'Space Mono',monospace; letter-spacing:0.3px; }
+.hcell-aula { font-size:7px; opacity:0.65; font-family:'Space Mono',monospace; }
 .hcell-multi {
-  flex:1; width:100%; border-radius:6px;
+  flex:1; width:100%; border-radius:5px;
   display:flex; align-items:center; justify-content:center;
   font-size:8px; font-weight:700; text-align:center;
   cursor:pointer; transition: opacity 0.15s;
@@ -1068,13 +1066,17 @@ body {
       <div class="form-group">
         <label class="form-label">HORA</label>
         <select class="form-input" id="c-hora">
-          <option value="0">07:00</option><option value="1">08:00</option>
-          <option value="2">09:00</option><option value="3">10:00</option>
-          <option value="4">11:00</option><option value="5">12:00</option>
-          <option value="6">13:00</option><option value="7">14:00</option>
-          <option value="8">15:00</option><option value="9">16:00</option>
-          <option value="10">17:00</option><option value="11">18:00</option>
-          <option value="12">19:00</option><option value="13">20:00</option>
+          <option value="0">07:00</option><option value="1">07:30</option>
+          <option value="2">08:00</option><option value="3">08:30</option>
+          <option value="4">09:00</option><option value="5">09:30</option>
+          <option value="6">10:00</option><option value="7">10:30</option>
+          <option value="8">11:00</option><option value="9">11:30</option>
+          <option value="10">12:00</option><option value="11">12:30</option>
+          <option value="12">13:00</option><option value="13">13:30</option>
+          <option value="14">14:00</option><option value="15">14:30</option>
+          <option value="16">15:00</option><option value="17">15:30</option>
+          <option value="18">16:00</option><option value="19">16:30</option>
+          <option value="20">17:00</option><option value="21">17:30</option>
         </select>
       </div>
     </div>
@@ -1206,43 +1208,93 @@ const DEFAULT_STATE = {
   tareas: [],
   examenes: [],
   horario: [
-    // ─── ANÁLISIS MATEMÁTICO I (id:2 → MCT-102) ───
-    {id:101, materiaId:2, dia:1, hora:1, aula:'AM'},   // Mar 8-9
-    {id:102, materiaId:2, dia:1, hora:2, aula:'AM'},   // Mar 9-10
-    {id:103, materiaId:2, dia:1, hora:3, aula:'AM'},   // Mar 10-11
-    {id:104, materiaId:2, dia:2, hora:1, aula:'AM'},   // Mié 8-9
-    {id:105, materiaId:2, dia:2, hora:2, aula:'AM'},   // Mié 9-10
-    {id:106, materiaId:2, dia:2, hora:3, aula:'AM'},   // Mié 10-11
-    {id:107, materiaId:2, dia:3, hora:1, aula:'AM'},   // Jue 8-9
-    {id:108, materiaId:2, dia:3, hora:2, aula:'(9:30)'},// Jue 9-9:30
-    {id:109, materiaId:2, dia:0, hora:2, aula:'AM'},   // Lun 9-10
-    {id:110, materiaId:2, dia:0, hora:3, aula:'(10:30)'},// Lun 10-10:30
+    // SLOTS: 0=07:00,1=07:30,2=08:00,3=08:30,4=09:00,5=09:30,
+    //        6=10:00,7=10:30,8=11:00,9=11:30,10=12:00,11=12:30,
+    //        12=13:00,13=13:30,14=14:00,15=14:30,16=15:00,17=15:30
 
-    // ─── GEOMETRÍA ANALÍTICA (id:3 → MCT-103) ───
-    {id:201, materiaId:3, dia:1, hora:1, aula:'GA'},   // Mar 8-9
-    {id:202, materiaId:3, dia:1, hora:2, aula:'GA'},   // Mar 9-10
-    {id:203, materiaId:3, dia:1, hora:3, aula:'GA'},   // Mar 10-11
-    {id:204, materiaId:3, dia:1, hora:4, aula:'GA'},   // Mar 11-12
-    {id:205, materiaId:3, dia:3, hora:3, aula:'GA'},   // Jue 10-11
-    {id:206, materiaId:3, dia:3, hora:4, aula:'GA'},   // Jue 11-12
-    {id:207, materiaId:3, dia:4, hora:4, aula:'GA'},   // Vie 11-12
-    {id:208, materiaId:3, dia:4, hora:5, aula:'GA'},   // Vie 12-13
+    // ─── ANÁLISIS MATEMÁTICO I (id:2) ───
+    {id:101, materiaId:2, dia:1, hora:2,  aula:'AM',            tipo:'teoria'},   // Mar 08:00
+    {id:102, materiaId:2, dia:1, hora:3,  aula:'AM',            tipo:'teoria'},   // Mar 08:30
+    {id:103, materiaId:2, dia:1, hora:4,  aula:'AM',            tipo:'teoria'},   // Mar 09:00
+    {id:104, materiaId:2, dia:1, hora:5,  aula:'AM',            tipo:'teoria'},   // Mar 09:30
+    {id:105, materiaId:2, dia:2, hora:2,  aula:'Aula 15',       tipo:'practica'}, // Mié 08:00
+    {id:106, materiaId:2, dia:2, hora:3,  aula:'Aula 15',       tipo:'practica'}, // Mié 08:30
+    {id:107, materiaId:2, dia:2, hora:4,  aula:'Aula 15',       tipo:'practica'}, // Mié 09:00
+    {id:108, materiaId:2, dia:2, hora:5,  aula:'Aula 15',       tipo:'practica'}, // Mié 09:30
+    {id:109, materiaId:2, dia:2, hora:6,  aula:'Aula 15',       tipo:'practica'}, // Mié 10:00
+    {id:110, materiaId:2, dia:3, hora:2,  aula:'Anfiteatro oeste', tipo:'teoria'},// Jue 08:00
+    {id:111, materiaId:2, dia:3, hora:3,  aula:'Anfiteatro oeste', tipo:'teoria'},// Jue 08:30
+    {id:112, materiaId:2, dia:3, hora:4,  aula:'',              tipo:'teoria'},   // Jue 09:00
+    {id:113, materiaId:2, dia:3, hora:5,  aula:'',              tipo:'teoria'},   // Jue 09:30
+    {id:114, materiaId:2, dia:0, hora:4,  aula:'Anfiteatro oeste', tipo:'teoria'},// Lun 09:00
+    {id:115, materiaId:2, dia:0, hora:5,  aula:'Anfiteatro oeste', tipo:'teoria'},// Lun 09:30
+    {id:116, materiaId:2, dia:0, hora:6,  aula:'',              tipo:'teoria'},   // Lun 10:00
+    {id:117, materiaId:2, dia:0, hora:8,  aula:'',              tipo:'practica'}, // Lun 11:00
+    {id:118, materiaId:2, dia:0, hora:10, aula:'',              tipo:'teoria'},   // Lun 12:00
+    {id:119, materiaId:2, dia:0, hora:11, aula:'',              tipo:'teoria'},   // Lun 12:30
+    {id:120, materiaId:2, dia:0, hora:14, aula:'Anfiteatro oeste', tipo:'practica'},// Lun 14:00
 
-    // ─── ÁLGEBRA (id:1 → MCT-101) ───
-    {id:301, materiaId:1, dia:0, hora:4, aula:'Alg'},  // Lun 11-12
-    {id:302, materiaId:1, dia:0, hora:5, aula:'Alg'},  // Lun 12-13
-    {id:303, materiaId:1, dia:2, hora:4, aula:'Alg'},  // Mié 11-12
-    {id:304, materiaId:1, dia:3, hora:4, aula:'Alg'},  // Jue 11-12
-    {id:305, materiaId:1, dia:3, hora:5, aula:'Alg'},  // Jue 12-13
+    // ─── GEOMETRÍA ANALÍTICA (id:3) ───
+    {id:201, materiaId:3, dia:1, hora:2,  aula:'Anfiteatro oeste', tipo:'teoria'},// Mar 08:00
+    {id:202, materiaId:3, dia:1, hora:3,  aula:'Anfiteatro oeste', tipo:'teoria'},// Mar 08:30
+    {id:203, materiaId:3, dia:1, hora:4,  aula:'',              tipo:'teoria'},   // Mar 09:00
+    {id:204, materiaId:3, dia:1, hora:5,  aula:'',              tipo:'teoria'},   // Mar 09:30
+    {id:205, materiaId:3, dia:1, hora:6,  aula:'',              tipo:'teoria'},   // Mar 10:00
+    {id:206, materiaId:3, dia:1, hora:7,  aula:'',              tipo:'teoria'},   // Mar 10:30
+    {id:207, materiaId:3, dia:1, hora:8,  aula:'',              tipo:'teoria'},   // Mar 11:00
+    {id:208, materiaId:3, dia:1, hora:9,  aula:'',              tipo:'teoria'},   // Mar 11:30
+    {id:209, materiaId:3, dia:1, hora:10, aula:'',              tipo:'teoria'},   // Mar 12:00
+    {id:210, materiaId:3, dia:1, hora:11, aula:'',              tipo:'teoria'},   // Mar 12:30
+    {id:211, materiaId:3, dia:1, hora:12, aula:'',              tipo:'practica'}, // Mar 13:00
+    {id:212, materiaId:3, dia:1, hora:14, aula:'',              tipo:'practica'}, // Mar 14:00
+    {id:213, materiaId:3, dia:1, hora:15, aula:'',              tipo:'practica'}, // Mar 14:30
+    {id:214, materiaId:3, dia:1, hora:16, aula:'',              tipo:'practica'}, // Mar 15:00
+    {id:215, materiaId:3, dia:1, hora:17, aula:'',              tipo:'practica'}, // Mar 15:30
+    {id:216, materiaId:3, dia:1, hora:18, aula:'',              tipo:'practica'}, // Mar 16:00
+    {id:217, materiaId:3, dia:1, hora:19, aula:'',              tipo:'practica'}, // Mar 16:30
+    {id:218, materiaId:3, dia:1, hora:20, aula:'',              tipo:'teoria'},   // Mar 17:00
+    {id:219, materiaId:3, dia:3, hora:12, aula:'',              tipo:'teoria'},   // Jue 13:00
+    {id:220, materiaId:3, dia:4, hora:8,  aula:'Aula 4',        tipo:'teoria'},   // Vie 11:00
+    {id:221, materiaId:3, dia:4, hora:9,  aula:'Aula 4',        tipo:'teoria'},   // Vie 11:30
+    {id:222, materiaId:3, dia:4, hora:10, aula:'',              tipo:'teoria'},   // Vie 12:00
+    {id:223, materiaId:3, dia:4, hora:11, aula:'',              tipo:'teoria'},   // Vie 12:30
+    {id:224, materiaId:3, dia:4, hora:12, aula:'',              tipo:'teoria'},   // Vie 13:00
+    {id:225, materiaId:3, dia:4, hora:18, aula:'Aula 4',        tipo:'teoria'},   // Vie 16:00
+    {id:226, materiaId:3, dia:4, hora:19, aula:'',              tipo:'practica'}, // Vie 16:30
+    {id:227, materiaId:3, dia:4, hora:20, aula:'',              tipo:'practica'}, // Vie 17:00
 
-    // ─── INTRODUCCIÓN A LA INGENIERÍA (id:4 → MCT-104) ───
-    {id:401, materiaId:4, dia:1, hora:7, aula:'14-16hs'},  // Mar 14-16
-    {id:402, materiaId:4, dia:2, hora:7, aula:'14-15hs'},  // Mié 14-15
+    // ─── ÁLGEBRA (id:1) ───
+    {id:301, materiaId:1, dia:0, hora:8,  aula:'Aula 15',       tipo:'teoria'},   // Lun 11:00
+    {id:302, materiaId:1, dia:0, hora:9,  aula:'Aula 15',       tipo:'teoria'},   // Lun 11:30
+    {id:303, materiaId:1, dia:0, hora:10, aula:'Aula 15',       tipo:'teoria'},   // Lun 12:00
+    {id:304, materiaId:1, dia:0, hora:11, aula:'',              tipo:'teoria'},   // Lun 12:30
+    {id:305, materiaId:1, dia:2, hora:9,  aula:'Aula 14',       tipo:'teoria'},   // Mié 11:30
+    {id:306, materiaId:1, dia:2, hora:10, aula:'',              tipo:'teoria'},   // Mié 12:00
+    {id:307, materiaId:1, dia:2, hora:11, aula:'',              tipo:'teoria'},   // Mié 12:30
+    {id:308, materiaId:1, dia:3, hora:6,  aula:'Aula 9',        tipo:'teoria'},   // Jue 10:00
+    {id:309, materiaId:1, dia:3, hora:8,  aula:'',              tipo:'teoria'},   // Jue 11:00
+    {id:310, materiaId:1, dia:3, hora:9,  aula:'',              tipo:'teoria'},   // Jue 11:30
+    {id:311, materiaId:1, dia:3, hora:10, aula:'Aula 9',        tipo:'teoria'},   // Jue 12:00
+    {id:312, materiaId:1, dia:3, hora:11, aula:'',              tipo:'teoria'},   // Jue 12:30
+    {id:313, materiaId:1, dia:3, hora:12, aula:'',              tipo:'teoria'},   // Jue 13:00
+    {id:314, materiaId:1, dia:3, hora:14, aula:'',              tipo:'practica'}, // Jue 14:00
+    {id:315, materiaId:1, dia:4, hora:16, aula:'Aula 9',        tipo:'teoria'},   // Vie 16:00
+    {id:316, materiaId:1, dia:4, hora:17, aula:'',              tipo:'practica'}, // Vie 16:30
+    {id:317, materiaId:1, dia:4, hora:20, aula:'',              tipo:'practica'}, // Vie 17:00
+
+    // ─── INTRODUCCIÓN A LA INGENIERÍA (id:4) ───
+    {id:401, materiaId:4, dia:1, hora:14, aula:'',              tipo:'teoria'},   // Mar 14:00
+    {id:402, materiaId:4, dia:1, hora:15, aula:'',              tipo:'teoria'},   // Mar 14:30
+    {id:403, materiaId:4, dia:1, hora:16, aula:'',              tipo:'teoria'},   // Mar 15:00
+    {id:404, materiaId:4, dia:1, hora:17, aula:'',              tipo:'teoria'},   // Mar 15:30
+    {id:405, materiaId:4, dia:1, hora:18, aula:'',              tipo:'teoria'},   // Mar 16:00
+    {id:406, materiaId:4, dia:1, hora:19, aula:'',              tipo:'teoria'},   // Mar 16:30
+    {id:407, materiaId:4, dia:1, hora:20, aula:'',              tipo:'teoria'},   // Mar 17:00
   ]
 };
 
 // ── LOCAL STORAGE ──
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v13';
 
 // ── EXPORT / IMPORT ──
 function exportarDatos() {
@@ -1601,63 +1653,70 @@ function rHorario(){
   const g=document.getElementById('horario-grid');
   if(!g) return;
 
-  const HORAS_ALL = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
+  // Slots de 30 minutos: índice 0=07:00, 1=07:30, 2=08:00 ... 21=17:30
+  const SLOTS = [
+    '07:00','07:30','08:00','08:30','09:00','09:30',
+    '10:00','10:30','11:00','11:30','12:00','12:30',
+    '13:00','13:30','14:00','14:30','15:00','15:30',
+    '16:00','16:30','17:00','17:30'
+  ];
 
-  // Calcular rango dinámico: mostrar desde la hora más temprana hasta la más tardía con clases
-  const horasConClase = state.horario.map(c => c.hora);
-  const horaMin = horasConClase.length ? Math.max(0, Math.min(...horasConClase)) : 1;
-  const horaMax = horasConClase.length ? Math.min(13, Math.max(...horasConClase)) : 9;
-  const HORAS_SHOW = [];
-  for (let i = horaMin; i <= horaMax; i++) HORAS_SHOW.push(i);
+  // Rango dinámico basado en clases existentes, con mínimo sensato
+  const horas = state.horario.map(c=>c.hora).filter(h=>h>=0 && h<SLOTS.length);
+  const sMin = horas.length ? Math.min(...horas) : 2;   // default 08:00
+  const sMax = horas.length ? Math.max(...horas) : 17;  // default 15:30
+  // Padding de 1 slot arriba y abajo para contexto
+  const rangeMin = Math.max(0, sMin - 1);
+  const rangeMax = Math.min(SLOTS.length - 1, sMax + 1);
 
-  let html='<div></div>';
-  DIAS.forEach(d=>html+=`<div class="hcell-head">${d}</div>`);
+  let html = '<div></div>';
+  DIAS.forEach(d => html += `<div class="hcell-head">${d}</div>`);
 
-  HORAS_SHOW.forEach(hi=>{
-    html+=`<div class="hcell-hora">${HORAS_ALL[hi]}</div>`;
-    for(let di=0;di<5;di++){
-      const clases=state.horario.filter(x=>x.dia===di && x.hora===hi);
-      if(clases.length===0){
-        html+=`<div class="hcell empty"></div>`;
-      } else if(clases.length===1){
-        const c=clases[0];
-        const m=getM(c.materiaId);
-        const nc=m?`c-${m.color}`:'c-verde';
-        const short=m?m.nombre.split(' ')[0].substring(0,5):'?';
-        const tipoBadge = c.tipo ? `<span style="font-size:7px;opacity:0.8;font-family:'Space Mono',monospace;">${c.tipo==='practica'?'PRÁ':'TEO'}</span>` : '';
-        html+=`<div class="hcell ${nc}" onclick="accionClase(${c.id})" title="${m?m.nombre:''} · Tocá para opciones">
+  for (let si = rangeMin; si <= rangeMax; si++) {
+    const esMedia = si % 2 === 1; // slot :30
+    html += `<div class="hcell-hora ${esMedia?'half':''}">${SLOTS[si]}</div>`;
+
+    for (let di = 0; di < 5; di++) {
+      const clases = state.horario.filter(x => x.dia === di && x.hora === si);
+
+      if (clases.length === 0) {
+        html += `<div class="hcell ${esMedia?'half-empty':'empty'}"></div>`;
+      } else if (clases.length === 1) {
+        const c = clases[0];
+        const m = getM(c.materiaId);
+        const nc = m ? `c-${m.color}` : 'c-verde';
+        const short = m ? m.nombre.split(' ')[0].substring(0,5) : '?';
+        const tipoLbl = c.tipo === 'practica' ? 'PRÁCT' : c.tipo === 'teoria' ? 'TEÓR' : '';
+        const aulaStr = c.aula && c.aula !== '—' ? c.aula : '';
+        html += `<div class="hcell ${nc}" onclick="accionClase(${c.id})">
           <span>${short}</span>
-          ${tipoBadge}
-          <span class="hcell-aula">${c.aula||''}</span>
+          ${tipoLbl ? `<span class="hcell-tipo">${tipoLbl}</span>` : ''}
+          ${aulaStr ? `<span class="hcell-aula">${aulaStr}</span>` : ''}
         </div>`;
       } else {
-        const inner = clases.map(c=>{
-          const m=getM(c.materiaId);
-          const nc=m?`c-${m.color}`:'c-verde';
-          const short=m?m.nombre.split(' ')[0].substring(0,4):'?';
-          const tp = c.tipo ? (c.tipo==='practica'?'P':'T') : '';
-          return `<div class="hcell-multi ${nc}" onclick="accionClase(${c.id})">${short}${tp?'·'+tp:''}</div>`;
+        const inner = clases.map(c => {
+          const m = getM(c.materiaId);
+          const nc = m ? `c-${m.color}` : 'c-verde';
+          const short = m ? m.nombre.split(' ')[0].substring(0,4) : '?';
+          return `<div class="hcell-multi ${nc}" onclick="accionClase(${c.id})">${short}</div>`;
         }).join('');
-        html+=`<div class="hcell" style="flex-direction:column;gap:1px;padding:1px;background:var(--panel2);border-color:var(--border);">${inner}</div>`;
+        html += `<div class="hcell" style="flex-direction:column;gap:1px;padding:1px;background:var(--panel2);border-color:var(--border);">${inner}</div>`;
       }
     }
-  });
-  g.innerHTML=html;
+  }
+  g.innerHTML = html;
 }
 
-// Menú de opciones al tocar una clase
 window.accionClase = function(id) {
   const c = state.horario.find(x => x.id === id);
   if (!c) return;
   const m = getM(c.materiaId);
   const nombre = m ? m.nombre : 'Clase';
-  const HORAS_ALL = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
-  const hora = HORAS_ALL[c.hora] || '';
-  const tipoStr = c.tipo ? (c.tipo==='practica' ? ' · Práctica' : ' · Teoría') : '';
-
-  // Usar confirm como menú simple (compatible con todos los navegadores móviles)
-  const opcion = confirm(`${nombre}\n${hora}hs${tipoStr} · ${c.aula||'Sin aula'}\n\n¿Eliminar esta clase?`);
-  if (opcion) {
+  const SLOTS = ['07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30'];
+  const hora = SLOTS[c.hora] || '';
+  const tipoStr = c.tipo === 'practica' ? ' · Práctica' : c.tipo === 'teoria' ? ' · Teoría' : '';
+  const aulaStr = c.aula && c.aula !== '—' ? ` · ${c.aula}` : '';
+  if (confirm(`${nombre}\n${hora}hs${tipoStr}${aulaStr}\n\n¿Eliminar esta clase?`)) {
     state.horario = state.horario.filter(x => x.id !== id);
     showToast('🗑️ Clase eliminada');
     saveState(); render();
