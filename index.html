@@ -1106,6 +1106,43 @@ body {
     <div class="modal-handle"></div>
     <div class="modal-title">📄 <span>Escanear PDF con IA</span></div>
 
+    <!-- Configuración API (colapsable) -->
+    <div id="pdf-config-wrap" style="margin-bottom:14px;">
+      <button onclick="toggleConfigIA()" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+        <span style="font-size:12px;font-weight:700;color:var(--text);">⚙️ Configuración de IA</span>
+        <span id="pdf-config-arrow" style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;" id="pdf-config-chevron">▼</span>
+      </button>
+      <div id="pdf-config-body" style="display:none;background:var(--panel2);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:14px;">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">API KEY</label>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" id="ia-api-key" type="password" placeholder="sk-ant-api03-..." style="flex:1;font-family:'Space Mono',monospace;font-size:11px;">
+            <button onclick="toggleVerAPI()" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:0 12px;color:var(--muted);cursor:pointer;font-size:14px;" id="btn-ver-api">👁️</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:5px;font-family:'Space Mono',monospace;line-height:1.5;">
+            Obtenela en <b style="color:var(--accent);">console.anthropic.com</b><br>
+            Se guarda localmente, nunca se envía a otro servidor.
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">MODELO</label>
+          <select class="form-input" id="ia-modelo">
+            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (recomendado)</option>
+            <option value="claude-opus-4-5">Claude Opus 4.5 (más potente)</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (más rápido)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="mbtn mbtn-ok" style="flex:1;" onclick="guardarConfigIA()">Guardar</button>
+          <button class="mbtn mbtn-cancel" onclick="toggleConfigIA()">Cerrar</button>
+        </div>
+        <div id="ia-config-status" style="font-size:10px;text-align:center;margin-top:8px;font-family:'Space Mono',monospace;"></div>
+      </div>
+    </div>
+
+    <!-- Indicador de config activa -->
+    <div id="pdf-config-badge" style="display:none;font-family:'Space Mono',monospace;font-size:10px;color:var(--success);background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:6px 12px;margin-bottom:12px;text-align:center;"></div>
+
     <!-- Estado: idle -->
     <div id="pdf-idle">
       <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
@@ -2491,7 +2528,72 @@ function rCal() {
   el.innerHTML = html;
 }
 
-// ── PDF SCANNER CON IA ──
+// ── CONFIGURACIÓN IA ──
+function getConfigIA() {
+  try {
+    return JSON.parse(localStorage.getItem('ing1-ia-config') || '{}');
+  } catch(e) { return {}; }
+}
+function guardarConfigIA() {
+  const key   = document.getElementById('ia-api-key').value.trim();
+  const model = document.getElementById('ia-modelo').value;
+  if (!key) { showToast('⚠️ Ingresá una API Key', 3000); return; }
+  if (!key.startsWith('sk-ant-')) { showToast('⚠️ La key debe comenzar con sk-ant-', 3000); return; }
+  localStorage.setItem('ing1-ia-config', JSON.stringify({ key, model }));
+  document.getElementById('ia-config-status').textContent = '✅ Guardado correctamente';
+  document.getElementById('ia-config-status').style.color = 'var(--success)';
+  setTimeout(() => {
+    toggleConfigIA();
+    actualizarBadgeConfig();
+  }, 800);
+  showToast('✅ Config de IA guardada');
+}
+function toggleConfigIA() {
+  const body  = document.getElementById('pdf-config-body');
+  const arrow = document.getElementById('pdf-config-arrow');
+  const open  = body.style.display === 'block';
+  body.style.display  = open ? 'none' : 'block';
+  arrow.textContent   = open ? '▼' : '▲';
+  if (!open) {
+    // Pre-rellenar con config guardada
+    const cfg = getConfigIA();
+    if (cfg.key)   document.getElementById('ia-api-key').value  = cfg.key;
+    if (cfg.model) document.getElementById('ia-modelo').value   = cfg.model;
+    document.getElementById('ia-config-status').textContent = '';
+  }
+}
+function toggleVerAPI() {
+  const input = document.getElementById('ia-api-key');
+  const btn   = document.getElementById('btn-ver-api');
+  if (input.type === 'password') {
+    input.type = 'text'; btn.textContent = '🙈';
+  } else {
+    input.type = 'password'; btn.textContent = '👁️';
+  }
+}
+function actualizarBadgeConfig() {
+  const badge = document.getElementById('pdf-config-badge');
+  if (!badge) return;
+  const cfg = getConfigIA();
+  if (cfg.key) {
+    const modelName = {
+      'claude-sonnet-4-20250514': 'Sonnet 4',
+      'claude-opus-4-5':         'Opus 4.5',
+      'claude-haiku-4-5-20251001':'Haiku 4.5',
+    }[cfg.model] || cfg.model;
+    badge.style.display = '';
+    badge.textContent = `✅ API configurada · ${modelName}`;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Llamar al abrir el modal PDF
+const _origOpenModal = openModal;
+function openModal(id) {
+  _origOpenModal(id);
+  if (id === 'modal-pdf') actualizarBadgeConfig();
+}
 let pdfFile = null;
 let iaResultados = [];
 
@@ -2549,6 +2651,17 @@ function resetScanner() {
 
 async function analizarPDF() {
   if (!pdfFile) return;
+
+  // Verificar config
+  const cfg = getConfigIA();
+  if (!cfg.key) {
+    showToast('⚠️ Configurá tu API Key primero', 3500);
+    // Abrir config automáticamente
+    const body = document.getElementById('pdf-config-body');
+    if (body.style.display !== 'block') toggleConfigIA();
+    return;
+  }
+
   setPDFEstado('loading');
 
   const base64 = await new Promise((res, rej) => {
@@ -2599,9 +2712,14 @@ No inventes fechas. Si una fecha no es legible, no incluyas el item.`;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': cfg.key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: cfg.model || 'claude-sonnet-4-20250514',
         max_tokens: 1500,
         messages: [{
           role: 'user',
