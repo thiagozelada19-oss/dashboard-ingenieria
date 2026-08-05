@@ -253,6 +253,13 @@ body {
 .meb-sinpromoc   { background: rgba(251,146,60,0.22);  color: var(--accent3);  border: 1px solid rgba(251,146,60,0.35); }
 .meb-libre       { background: rgba(100,116,139,0.22); color: #94a3b8;         border: 1px solid rgba(100,116,139,0.35); }
 .meb-pendiente   { background: rgba(248,113,113,0.22); color: var(--danger);   border: 1px solid rgba(248,113,113,0.35); }
+.meb-archivada   { background: rgba(100,116,139,0.15); color: #64748b;         border: 1px solid rgba(100,116,139,0.25); }
+
+.mat-card.archivada {
+  opacity: 0.55;
+  filter: saturate(0.3);
+}
+.mat-card.archivada:hover { opacity: 0.8; filter: saturate(0.6); }
 .btn-edit, .btn-del {
   flex:1; padding:10px; border-radius:12px; border:none;
   font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600;
@@ -729,38 +736,6 @@ body {
   font-size: 12px; cursor: pointer;
 }
 
-/* ── PDF SCANNER ── */
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.pdf-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 12px 14px;
-  background: var(--panel2); border: 1px solid var(--border);
-  border-radius: 14px; margin-bottom: 8px;
-  transition: all 0.2s; cursor: pointer;
-}
-.pdf-item.selected {
-  background: rgba(94,234,212,0.07);
-  border-color: rgba(94,234,212,0.35);
-}
-.pdf-item-check {
-  width: 22px; height: 22px; border-radius: 7px;
-  border: 2px solid var(--border); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; transition: all 0.2s; margin-top: 2px;
-}
-.pdf-item.selected .pdf-item-check {
-  background: var(--accent); border-color: var(--accent); color: #0b0d12;
-}
-.pdf-item-body { flex: 1; min-width: 0; }
-.pdf-item-titulo { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
-.pdf-item-meta { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.6; }
-.pdf-item-tipo {
-  font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
-  padding: 3px 8px; border-radius: 999px; flex-shrink: 0; margin-top: 2px;
-}
-.pit-examen { background: rgba(129,140,248,0.2); color: var(--accent2); }
-.pit-tarea  { background: rgba(251,146,60,0.2);  color: var(--accent3); }
 </style>
 </head>
 <body>
@@ -773,7 +748,6 @@ body {
   </div>
   <div class="topbar-right">
     <button class="topbar-backup" onclick="openModal('modal-backup')" title="Backup de datos">💾</button>
-    <button class="topbar-backup" title="Escanear PDF con IA" onclick="openModal('modal-pdf')">📄</button>
     <button class="topbar-add" id="fab" onclick="fabAction()">+</button>
   </div>
 </div>
@@ -934,35 +908,39 @@ body {
         </select>
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">1° PARCIAL (0-100)</label>
-        <input class="form-input" id="m-n1" type="number" min="0" max="100" step="1" placeholder="—"
-          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
-      </div>
-      <div class="form-group">
-        <label class="form-label">2° PARCIAL (0-100)</label>
-        <input class="form-input" id="m-n2" type="number" min="0" max="100" step="1" placeholder="—"
-          oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
+    <!-- Notas parciales (ocultas si Promocionada) -->
+    <div id="m-parciales-wrap">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">1° PARCIAL (0-100)</label>
+          <input class="form-input" id="m-n1" type="number" min="0" max="100" step="1" placeholder="—"
+            oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
+        </div>
+        <div class="form-group">
+          <label class="form-label">2° PARCIAL (0-100)</label>
+          <input class="form-input" id="m-n2" type="number" min="0" max="100" step="1" placeholder="—"
+            oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
+        </div>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">FINAL (0-100, si aplica)</label>
+      <label class="form-label" id="m-nf-label">FINAL (0-100, si aplica)</label>
       <input class="form-input" id="m-nf" type="number" min="0" max="100" step="1" placeholder="—"
         oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
     </div>
     <div class="form-group">
       <label class="form-label">ESTADO</label>
-      <select class="form-input" id="m-estado">
+      <select class="form-input" id="m-estado" onchange="onEstadoChange()">
           <option value="cursando">📖 Cursando</option>
           <option value="promocion">⭐ Promocionada</option>
           <option value="sinpromoc">📝 Sin Promoción (rinde final)</option>
           <option value="aprobada">✅ Aprobada (final rendido)</option>
+          <option value="archivada">🗂️ Archivada</option>
           <option value="libre">🆓 Libre (para cursar)</option>
           <option value="pendiente">⏳ Pendiente (bloqueada)</option>
         </select>
         <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px;line-height:1.5;">
-        💡 Auto: ambos parciales ≥ 60 → Regular (puede rendir final)
+          💡 Auto: ambos parciales ≥ 60 → Regular · Promocionada: solo nota final
         </div>
     </div>
     <div class="modal-btns">
@@ -1122,94 +1100,6 @@ body {
   </div>
 </div>
 
-<!-- Modal Scanner PDF IA -->
-<div class="modal-overlay" id="modal-pdf">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">📄 <span>Escanear PDF con IA</span></div>
-
-    <!-- Configuración API — siempre visible -->
-    <div style="background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:12px;">⚙️ Configuración de IA</div>
-
-      <div class="form-group" style="margin-bottom:10px;">
-        <label class="form-label">PROVEEDOR / BASE URL</label>
-        <select class="form-input" id="ia-provider" onchange="onProviderChange()" style="margin-bottom:6px;">
-          <option value="https://api.anthropic.com/v1/messages">Anthropic (Claude)</option>
-          <option value="https://api.openai.com/v1/chat/completions">OpenAI (GPT)</option>
-          <option value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions">Google (Gemini)</option>
-          <option value="custom">Otro / URL personalizada</option>
-        </select>
-        <input class="form-input" id="ia-custom-url" placeholder="https://mi-api.com/v1/messages" style="display:none;font-family:'Space Mono',monospace;font-size:11px;margin-top:6px;">
-      </div>
-
-      <div class="form-group" style="margin-bottom:10px;">
-        <label class="form-label">API KEY</label>
-        <div style="display:flex;gap:8px;">
-          <input class="form-input" id="ia-api-key" type="password" placeholder="Ingresá tu API Key..." style="flex:1;font-family:'Space Mono',monospace;font-size:11px;">
-          <button onclick="toggleVerAPI()" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:0 12px;color:var(--muted);cursor:pointer;font-size:14px;flex-shrink:0;" id="btn-ver-api">👁️</button>
-        </div>
-        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">Se guarda solo en este dispositivo, nunca se comparte.</div>
-      </div>
-
-      <div class="form-group" style="margin-bottom:12px;">
-        <label class="form-label">MODELO</label>
-        <input class="form-input" id="ia-modelo" placeholder="ej: claude-sonnet-4-20250514" style="font-family:'Space Mono',monospace;font-size:11px;">
-        <div id="ia-modelos-sugeridos" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"></div>
-      </div>
-
-      <button class="mbtn mbtn-ok" style="width:100%;" onclick="guardarConfigIA()">💾 Guardar configuración</button>
-      <div id="ia-config-status" style="font-size:10px;text-align:center;margin-top:8px;font-family:'Space Mono',monospace;min-height:16px;"></div>
-    </div>
-
-    <!-- Badge config activa -->
-    <div id="pdf-config-badge" style="display:none;font-family:'Space Mono',monospace;font-size:10px;color:var(--success);background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:8px;padding:6px 12px;margin-bottom:12px;text-align:center;"></div>
-
-    <!-- Estado: idle -->
-    <div id="pdf-idle">
-      <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
-        Subí un PDF de la facu (cronograma, programa, etc.) y la IA va a extraer automáticamente <b style="color:var(--text);">exámenes, parciales y tareas</b> para agregarlos al dashboard.
-      </div>
-      <div id="pdf-drop-area" style="border:2px dashed var(--border);border-radius:16px;padding:32px 16px;text-align:center;color:var(--muted);margin-bottom:16px;transition:all 0.2s;cursor:pointer;" onclick="document.getElementById('pdf-input2').click()">
-        <div style="font-size:32px;margin-bottom:8px;">📄</div>
-        <div style="font-size:13px;font-weight:600;">Tocá para seleccionar un PDF</div>
-        <div style="font-size:11px;margin-top:4px;" id="pdf-nombre-archivo">Ningún archivo seleccionado</div>
-        <input type="file" id="pdf-input2" accept=".pdf" style="display:none;" onchange="onPDFSelected(this)">
-      </div>
-      <button class="mbtn mbtn-ok" id="pdf-btn-analizar" style="width:100%;opacity:0.4;pointer-events:none;" onclick="analizarPDF()">
-        🔍 Analizar con IA
-      </button>
-    </div>
-
-    <!-- Estado: procesando -->
-    <div id="pdf-loading" style="display:none;text-align:center;padding:32px 0;">
-      <div style="font-size:40px;margin-bottom:16px;animation:spin 1.5s linear infinite;display:inline-block;">⚙️</div>
-      <div style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px;">Analizando con IA...</div>
-      <div style="font-size:12px;color:var(--muted);" id="pdf-loading-msg">Leyendo el documento...</div>
-    </div>
-
-    <!-- Estado: resultados -->
-    <div id="pdf-resultados" style="display:none;">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="pdf-resumen"></div>
-      <div id="pdf-items-list"></div>
-      <div class="modal-btns" style="margin-top:16px;">
-        <button class="mbtn mbtn-cancel" onclick="resetScanner()">Cancelar</button>
-        <button class="mbtn mbtn-ok" id="pdf-btn-importar" onclick="importarDesdeIA()">✅ Agregar seleccionados</button>
-      </div>
-    </div>
-
-    <!-- Estado: error -->
-    <div id="pdf-error" style="display:none;text-align:center;padding:24px 0;">
-      <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
-      <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;" id="pdf-error-msg">Error al procesar</div>
-      <button class="mbtn mbtn-cancel" style="width:100%;margin-top:8px;" onclick="resetScanner()">Reintentar</button>
-    </div>
-
-    <div id="pdf-close-btn" style="margin-top:12px;">
-      <button class="mbtn mbtn-cancel" style="width:100%;" onclick="closeModal('modal-pdf');resetScanner()">Cerrar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Modal Backup -->
 <div class="modal-overlay" id="modal-backup">
@@ -1573,30 +1463,111 @@ function fabAction(){
 // ── RENDER ──
 function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rAvance(); rCorr(); rCal(); fillSelects(); actualizarAlertas(); }
 
+let mostrarArchivadas = false;
+
+function toggleArchivadas() {
+  mostrarArchivadas = !mostrarArchivadas;
+  rMaterias();
+}
+
+window.archivarMateria = function(id) {
+  const m = state.materias.find(x => x.id == id);
+  if (!m) return;
+  const estaArchivada = m.estado === 'archivada';
+  m.estado = estaArchivada ? 'aprobada' : 'archivada';
+  showToast(estaArchivada ? '📤 Materia desarchivada' : '🗂️ Materia archivada');
+  saveState(); render();
+};
+
 function rMaterias(){
   const el=document.getElementById('materias-list');
   if(!el) return;
+
+  const activas   = state.materias.filter(m => m.estado !== 'archivada');
+  const archivadas = state.materias.filter(m => m.estado === 'archivada');
+
   if(!state.materias.length){
     el.innerHTML=`<div class="empty-state"><span class="icon">📚</span>No tenés materias todavía.<br>Tocá el <b>+</b> para agregar.</div>`;
     return;
   }
-  el.innerHTML = state.materias.map(m=>{
+
+  const renderCard = (m) => {
     const p=prom(m); const prog=p?Math.min(100, parseFloat(p)):0;
     const col=colorCSS(m.color);
-
     const estadoMap = {
       cursando:  { cls:'meb-cursando',  icon:'📖', txt:'Cursando' },
       promocion: { cls:'meb-promocion', icon:'⭐', txt:'Promocionada' },
       sinpromoc: { cls:'meb-sinpromoc', icon:'📝', txt:'Sin Promoción' },
       aprobada:  { cls:'meb-aprobada',  icon:'✅', txt:'Aprobada' },
+      archivada: { cls:'meb-archivada', icon:'🗂️', txt:'Archivada' },
       libre:     { cls:'meb-libre',     icon:'🆓', txt:'Libre' },
       pendiente: { cls:'meb-pendiente', icon:'⏳', txt:'Pendiente' },
     };
     const est = estadoMap[m.estado] || estadoMap['cursando'];
     const barraCol = m.estado==='promocion' ? 'var(--accent)'
-                   : m.estado==='aprobada'  ? 'var(--success)'
+                   : m.estado==='aprobada'||m.estado==='archivada'  ? 'var(--success)'
                    : m.estado==='sinpromoc' ? 'var(--accent3)' : col;
-    const barraProg = (m.estado==='promocion'||m.estado==='aprobada') ? 100 : prog;
+    const barraProg = (['promocion','aprobada','archivada'].includes(m.estado)) ? 100 : prog;
+    const archivadaCls = m.estado === 'archivada' ? ' archivada' : '';
+    const archBtn = m.estado === 'archivada'
+      ? `<button class="btn-edit" onclick="archivarMateria(${m.id})" style="color:var(--accent);">📤 Desarchivar</button>`
+      : `<button class="btn-edit" onclick="archivarMateria(${m.id})" style="opacity:0.6;">🗂️ Archivar</button>`;
+
+    // Notas: si es promocionada solo mostrar el final
+    const esPromoc = m.estado === 'promocion';
+    const notasHtml = esPromoc
+      ? `<div class="mat-notas" style="justify-content:center;">
+           <div class="nota-box" style="min-width:80px;">
+             <div class="nota-lbl">NOTA FINAL</div>
+             <div class="nota-num ${nColor(m.nf)}">${m.nf??'—'}</div>
+           </div>
+         </div>`
+      : `<div class="mat-notas">
+           <div class="nota-box"><div class="nota-lbl">1° PARC</div><div class="nota-num ${nColor(m.n1)}">${m.n1??'—'}</div></div>
+           <div class="nota-box"><div class="nota-lbl">2° PARC</div><div class="nota-num ${nColor(m.n2)}">${m.n2??'—'}</div></div>
+           <div class="nota-box"><div class="nota-lbl">FINAL</div><div class="nota-num ${nColor(m.nf)}">${m.nf??'—'}</div></div>
+         </div>`;
+
+    return `<div class="mat-card${archivadaCls}">
+      <div class="mat-stripe" style="background:${col};"></div>
+      <div class="mat-body">
+        <div class="mat-head">
+          <div>
+            <div class="mat-name">${m.nombre}</div>
+            <div class="mat-code">${m.codigo}</div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${col};">${p??'—'}</div>
+        </div>
+        <span class="mat-estado-badge ${est.cls}">${est.icon} ${est.txt}</span>
+        ${notasHtml}
+        <div class="barra-wrap"><div class="barra-fill" style="width:${barraProg}%;background:${barraCol};transition:width 0.6s ease;"></div></div>
+        <div class="mat-actions">
+          <button class="btn-edit" onclick="editarMateria(${m.id})">✏️ Editar</button>
+          ${archBtn}
+          <button class="btn-del" onclick="eliminarMateria(${m.id})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  let html = activas.map(renderCard).join('');
+
+  // Sección de archivadas
+  if (archivadas.length) {
+    const btnTxt = mostrarArchivadas
+      ? `🗂️ Ocultar archivadas (${archivadas.length})`
+      : `🗂️ Ver archivadas (${archivadas.length})`;
+    html += `<div style="margin:8px 0;">
+      <button onclick="toggleArchivadas()" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;">
+        ${btnTxt}
+      </button>
+    </div>`;
+    if (mostrarArchivadas) {
+      html += archivadas.map(renderCard).join('');
+    }
+  }
+
+  el.innerHTML = html;
 
     return `<div class="mat-card">
       <div class="mat-stripe" style="background:${col};"></div>
@@ -2277,9 +2248,6 @@ function openModal(id) {
   if(id==='modal-backup') {
     actualizarInfoBackup();
   }
-  if(id==='modal-pdf') {
-    cargarConfigEnForm();
-  }
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; }
@@ -2296,7 +2264,21 @@ function fillSelects(){
 }
 
 // ── ACCIONES MATERIAS ──
-// ── SANITIZACIÓN ──
+// ── ESTADO CHANGE: mostrar/ocultar parciales según estado ──
+function onEstadoChange() {
+  const estado = document.getElementById('m-estado').value;
+  const parcialesWrap = document.getElementById('m-parciales-wrap');
+  const nfLabel = document.getElementById('m-nf-label');
+  if (estado === 'promocion') {
+    parcialesWrap.style.display = 'none';
+    nfLabel.textContent = 'NOTA FINAL DE PROMOCIÓN (0-100)';
+    document.getElementById('m-n1').value = '';
+    document.getElementById('m-n2').value = '';
+  } else {
+    parcialesWrap.style.display = '';
+    nfLabel.textContent = 'FINAL (0-100, si aplica)';
+  }
+}
 function sanitize(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -2385,6 +2367,7 @@ window.editarMateria=function(id){
   document.getElementById('m-n2').value=m.n2??'';
   document.getElementById('m-nf').value=m.nf??'';
   document.getElementById('m-estado').value=m.estado||'cursando';
+  onEstadoChange();
   openModal('modal-materia');
 };
 
@@ -2616,408 +2599,6 @@ function rCal() {
   el.innerHTML = html;
 }
 
-// ── CONFIGURACIÓN IA ──
-const MODELOS_SUGERIDOS = {
-  'https://api.anthropic.com/v1/messages': [
-    'claude-sonnet-4-20250514','claude-opus-4-5','claude-haiku-4-5-20251001'
-  ],
-  'https://api.openai.com/v1/chat/completions': [
-    'gpt-4o','gpt-4o-mini','gpt-4-turbo','gpt-3.5-turbo'
-  ],
-  'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions': [
-    'gemini-2.0-flash','gemini-1.5-pro','gemini-1.5-flash'
-  ],
-};
-
-function getConfigIA() {
-  try { return JSON.parse(localStorage.getItem('ing1-ia-config') || '{}'); }
-  catch(e) { return {}; }
-}
-
-function onProviderChange() {
-  const sel = document.getElementById('ia-provider').value;
-  const customInput = document.getElementById('ia-custom-url');
-  customInput.style.display = sel === 'custom' ? '' : 'none';
-
-  // Mostrar modelos sugeridos
-  const sugs = MODELOS_SUGERIDOS[sel] || [];
-  const cont = document.getElementById('ia-modelos-sugeridos');
-  cont.innerHTML = sugs.map(m =>
-    `<span onclick="document.getElementById('ia-modelo').value='${m}'"
-      style="font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;
-             background:var(--panel);border:1px solid var(--border);border-radius:999px;
-             color:var(--muted);cursor:pointer;">${m}</span>`
-  ).join('');
-
-  // Pre-poner primer modelo sugerido si campo vacío
-  if (sugs.length) {
-    const modelInput = document.getElementById('ia-modelo');
-    if (!modelInput.value) modelInput.value = sugs[0];
-  }
-}
-
-function guardarConfigIA() {
-  const providerSel = document.getElementById('ia-provider').value;
-  const baseUrl = providerSel === 'custom'
-    ? document.getElementById('ia-custom-url').value.trim()
-    : providerSel;
-  const key   = document.getElementById('ia-api-key').value.trim();
-  const model = document.getElementById('ia-modelo').value.trim();
-
-  if (!baseUrl) { showToast('⚠️ Ingresá la URL del proveedor', 3000); return; }
-  if (!key)     { showToast('⚠️ Ingresá tu API Key', 3000); return; }
-  if (!model)   { showToast('⚠️ Ingresá el nombre del modelo', 3000); return; }
-
-  localStorage.setItem('ing1-ia-config', JSON.stringify({ baseUrl, key, model }));
-
-  const status = document.getElementById('ia-config-status');
-  status.style.color = 'var(--success)';
-  status.textContent = '✅ Guardado correctamente';
-  setTimeout(() => { status.textContent = ''; }, 3000);
-
-  actualizarBadgeConfig();
-  showToast('✅ Configuración de IA guardada');
-}
-
-function toggleVerAPI() {
-  const input = document.getElementById('ia-api-key');
-  const btn   = document.getElementById('btn-ver-api');
-  input.type  = input.type === 'password' ? 'text' : 'password';
-  btn.textContent = input.type === 'password' ? '👁️' : '🙈';
-}
-
-function actualizarBadgeConfig() {
-  const badge = document.getElementById('pdf-config-badge');
-  if (!badge) return;
-  const cfg = getConfigIA();
-  if (cfg.key && cfg.model) {
-    badge.style.display = '';
-    const provName = cfg.baseUrl?.includes('anthropic') ? 'Anthropic' :
-                     cfg.baseUrl?.includes('openai')    ? 'OpenAI'    :
-                     cfg.baseUrl?.includes('google')    ? 'Google'    : 'Custom';
-    badge.textContent = `✅ ${provName} · ${cfg.model}`;
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-function cargarConfigEnForm() {
-  const cfg = getConfigIA();
-  if (!cfg.key) return;
-  // Detectar proveedor
-  const provSel = document.getElementById('ia-provider');
-  const knownUrls = Array.from(provSel.options).map(o => o.value);
-  if (cfg.baseUrl && knownUrls.includes(cfg.baseUrl)) {
-    provSel.value = cfg.baseUrl;
-  } else if (cfg.baseUrl) {
-    provSel.value = 'custom';
-    document.getElementById('ia-custom-url').style.display = '';
-    document.getElementById('ia-custom-url').value = cfg.baseUrl;
-  }
-  onProviderChange();
-  document.getElementById('ia-api-key').value = cfg.key;
-  document.getElementById('ia-modelo').value  = cfg.model || '';
-  actualizarBadgeConfig();
-}
-let pdfFile = null;
-let iaResultados = [];
-
-function abrirScannerPDF(input) {
-  if (!input.files[0]) return;
-  pdfFile = input.files[0];
-  openModal('modal-pdf');
-  actualizarNombreArchivo(pdfFile.name);
-  habilitarBotonAnalizar(true);
-  input.value = '';
-}
-
-function onPDFSelected(input) {
-  if (!input.files[0]) return;
-  pdfFile = input.files[0];
-  actualizarNombreArchivo(pdfFile.name);
-  habilitarBotonAnalizar(true);
-}
-
-function actualizarNombreArchivo(nombre) {
-  const el = document.getElementById('pdf-nombre-archivo');
-  if (el) el.textContent = '📄 ' + nombre;
-  const area = document.getElementById('pdf-drop-area');
-  if (area) area.style.borderColor = 'var(--accent)';
-}
-
-function habilitarBotonAnalizar(on) {
-  const btn = document.getElementById('pdf-btn-analizar');
-  if (!btn) return;
-  btn.style.opacity = on ? '1' : '0.4';
-  btn.style.pointerEvents = on ? 'auto' : 'none';
-}
-
-function setPDFEstado(estado) {
-  ['pdf-idle','pdf-loading','pdf-resultados','pdf-error'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  const closeBtn = document.getElementById('pdf-close-btn');
-  if (closeBtn) closeBtn.style.display = estado === 'loading' ? 'none' : 'block';
-  const target = document.getElementById('pdf-' + estado);
-  if (target) target.style.display = 'block';
-}
-
-function resetScanner() {
-  pdfFile = null;
-  iaResultados = [];
-  setPDFEstado('idle');
-  habilitarBotonAnalizar(false);
-  const el = document.getElementById('pdf-nombre-archivo');
-  if (el) el.textContent = 'Ningún archivo seleccionado';
-  const area = document.getElementById('pdf-drop-area');
-  if (area) area.style.borderColor = 'var(--border)';
-}
-
-async function analizarPDF() {
-  if (!pdfFile) return;
-
-  // Verificar config
-  const cfg = getConfigIA();
-  if (!cfg.key) {
-    showToast('⚠️ Configurá tu API Key primero', 3500);
-    // Abrir config automáticamente
-    const body = document.getElementById('pdf-config-body');
-    if (body.style.display !== 'block') toggleConfigIA();
-    return;
-  }
-
-  setPDFEstado('loading');
-
-  const base64 = await new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result.split(',')[1]);
-    reader.onerror = () => rej(new Error('Error al leer el archivo'));
-    reader.readAsDataURL(pdfFile);
-  });
-
-  const materiasCtx = state.materias.map(m => `- id:${m.id} → "${m.nombre}"`).join('\n');
-  const hoy = new Date().toISOString().split('T')[0];
-
-  document.getElementById('pdf-loading-msg').textContent = 'Enviando a la IA...';
-
-  const prompt = `Sos un asistente para un estudiante universitario de Ingeniería Mecatrónica en Argentina (UNCUYO).
-Analizá este PDF y extraé ÚNICAMENTE: exámenes, parciales, recuperatorios, finales, y tareas/entregas/TPs.
-
-Materias del estudiante (usá estos IDs exactos):
-${materiasCtx}
-
-Fecha de hoy: ${hoy}
-
-Respondé SOLO con un JSON válido, sin texto extra, sin markdown:
-{
-  "items": [
-    {
-      "tipo": "examen",
-      "titulo": "descripción clara",
-      "materia": "nombre de materia o null",
-      "materiaId": id_numerico_o_null,
-      "fecha": "YYYY-MM-DD",
-      "hora": "HH:MM o null",
-      "aula": "texto o null",
-      "subtipo": "parcial|final|recup|quiz"
-    },
-    {
-      "tipo": "tarea",
-      "titulo": "descripción clara",
-      "materia": "nombre de materia o null",
-      "materiaId": id_numerico_o_null,
-      "fecha": "YYYY-MM-DD"
-    }
-  ],
-  "resumen": "descripción breve de lo encontrado"
-}
-No inventes fechas. Si una fecha no es legible, no incluyas el item.`;
-
-  try {
-    const isAnthropic = cfg.baseUrl.includes('anthropic.com');
-
-    const headers = { 'Content-Type': 'application/json' };
-    if (isAnthropic) {
-      headers['x-api-key'] = cfg.key;
-      headers['anthropic-version'] = '2023-06-01';
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    } else {
-      headers['Authorization'] = `Bearer ${cfg.key}`;
-    }
-
-    // Cuerpo del request: Anthropic vs OpenAI-compatible
-    const body = isAnthropic ? {
-      model: cfg.model,
-      max_tokens: 1500,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-          { type: 'text', text: prompt }
-        ]
-      }]
-    } : {
-      model: cfg.model,
-      max_tokens: 1500,
-      messages: [{
-        role: 'user',
-        content: `${prompt}\n\n[El PDF fue adjuntado pero este proveedor no soporta documentos directamente. Analizá el siguiente texto extraído si es posible, o indicá que no podés procesar PDFs.]`
-      }]
-    };
-
-    const resp = await fetch(cfg.baseUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Error ${resp.status}`);
-    }
-
-    document.getElementById('pdf-loading-msg').textContent = 'Procesando resultados...';
-
-    const data = await resp.json();
-
-    // Parsear respuesta según proveedor
-    let texto = '';
-    if (isAnthropic) {
-      texto = (data.content || []).map(b => b.text || '').join('').trim();
-    } else {
-      // OpenAI-compatible (OpenAI, Gemini, etc.)
-      texto = data.choices?.[0]?.message?.content || '';
-    }
-    const jsonStr = texto.replace(/```json|```/g, '').trim();
-    const resultado = JSON.parse(jsonStr);
-
-    iaResultados = (resultado.items || []).map((item, i) => ({ ...item, _sel: true, _idx: i }));
-    mostrarResultados(resultado.resumen || '', iaResultados);
-    setPDFEstado('resultados');
-
-  } catch (err) {
-    document.getElementById('pdf-error-msg').textContent = err.message || 'No se pudo procesar el PDF';
-    setPDFEstado('error');
-  }
-}
-
-function mostrarResultados(resumen, items) {
-  const resEl  = document.getElementById('pdf-resumen');
-  const listEl = document.getElementById('pdf-items-list');
-
-  const examenes = items.filter(i => i.tipo === 'examen').length;
-  const tareas   = items.filter(i => i.tipo === 'tarea').length;
-  const partes   = [];
-  if (examenes) partes.push(`${examenes} examen${examenes>1?'es':''}`);
-  if (tareas)   partes.push(`${tareas} tarea${tareas>1?'s':''}`);
-
-  resEl.innerHTML = `
-    <div style="background:rgba(94,234,212,0.07);border:1px solid rgba(94,234,212,0.2);border-radius:12px;padding:10px 14px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:3px;">🔍 ${resumen}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);">
-        ${partes.length ? partes.join(' · ') + ' encontrado' + (items.length>1?'s':'') : 'Sin resultados'}
-        ${items.length ? ' · Tocá para deseleccionar' : ''}
-      </div>
-    </div>`;
-
-  if (!items.length) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:24px 0;"><span class="icon">🔍</span>No se encontraron exámenes ni tareas.</div>`;
-    document.getElementById('pdf-btn-importar').style.display = 'none';
-    return;
-  }
-
-  document.getElementById('pdf-btn-importar').style.display = '';
-
-  listEl.innerHTML = items.map(item => {
-    const esExamen = item.tipo === 'examen';
-    const tipoCls  = esExamen ? 'pit-examen' : 'pit-tarea';
-    const tipoLbl  = esExamen
-      ? ({ parcial:'Parcial', final:'Final', recup:'Recup', quiz:'Quiz' }[item.subtipo] || 'Examen')
-      : 'Tarea';
-    const fechaFmt = item.fecha
-      ? new Date(item.fecha + 'T12:00').toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'short' })
-      : 'Sin fecha';
-    const materiaFmt = item.materia || 'Materia no detectada';
-    const extra = [item.hora, item.aula].filter(Boolean).join(' · ');
-
-    return `<div class="pdf-item selected" id="pdf-item-${item._idx}" onclick="togglePDFItem(${item._idx})">
-      <div class="pdf-item-check">✓</div>
-      <div class="pdf-item-body">
-        <div class="pdf-item-titulo">${item.titulo}</div>
-        <div class="pdf-item-meta">
-          ${materiaFmt}<br>
-          📅 ${fechaFmt}${extra ? ' · ' + extra : ''}
-        </div>
-      </div>
-      <span class="pdf-item-tipo ${tipoCls}">${tipoLbl}</span>
-    </div>`;
-  }).join('');
-}
-
-function togglePDFItem(idx) {
-  const item = iaResultados.find(i => i._idx === idx);
-  if (!item) return;
-  item._sel = !item._sel;
-  const el = document.getElementById('pdf-item-' + idx);
-  if (!el) return;
-  el.classList.toggle('selected', item._sel);
-  el.querySelector('.pdf-item-check').textContent = item._sel ? '✓' : '';
-}
-
-function importarDesdeIA() {
-  const sel = iaResultados.filter(i => i._sel);
-  if (!sel.length) { showToast('⚠️ Seleccioná al menos un elemento'); return; }
-
-  let examAdded = 0, tareaAdded = 0;
-
-  sel.forEach(item => {
-    if (!item.fecha) return;
-
-    // Intentar emparejar materia por nombre si no hay ID
-    const getMid = () => {
-      if (item.materiaId && state.materias.find(m => m.id == item.materiaId)) return item.materiaId;
-      if (item.materia) {
-        const kw = item.materia.toLowerCase().split(' ')[0];
-        const match = state.materias.find(m => m.nombre.toLowerCase().includes(kw));
-        if (match) return match.id;
-      }
-      return state.materias[0]?.id || 1;
-    };
-
-    if (item.tipo === 'examen') {
-      state.examenes.push({
-        id: Date.now() + Math.random(),
-        materiaId: getMid(),
-        tipo: item.subtipo || 'parcial',
-        num: '',
-        fecha: item.fecha,
-        hora: item.hora || null,
-        aula: sanitize(item.aula || ''),
-      });
-      examAdded++;
-    } else {
-      state.tareas.push({
-        id: Date.now() + Math.random(),
-        titulo: sanitize(item.titulo),
-        materiaId: getMid(),
-        fecha: item.fecha,
-        completada: false,
-      });
-      tareaAdded++;
-    }
-  });
-
-  saveState();
-  render();
-  closeModal('modal-pdf');
-  resetScanner();
-
-  const partes = [];
-  if (examAdded) partes.push(`${examAdded} examen${examAdded>1?'es':''}`);
-  if (tareaAdded) partes.push(`${tareaAdded} tarea${tareaAdded>1?'s':''}`);
-  showToast(`✅ Agregado: ${partes.join(' y ')}`, 3000);
-}
 
 render();
 
