@@ -1052,20 +1052,20 @@ body {
       <label class="form-label">MATERIA</label>
       <select class="form-input" id="c-materia"></select>
     </div>
+    <div class="form-group">
+      <label class="form-label">DÍA</label>
+      <select class="form-input" id="c-dia">
+        <option value="0">Lunes</option>
+        <option value="1">Martes</option>
+        <option value="2">Miércoles</option>
+        <option value="3">Jueves</option>
+        <option value="4">Viernes</option>
+      </select>
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">DÍA</label>
-        <select class="form-input" id="c-dia">
-          <option value="0">Lunes</option>
-          <option value="1">Martes</option>
-          <option value="2">Miércoles</option>
-          <option value="3">Jueves</option>
-          <option value="4">Viernes</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">HORA</label>
-        <select class="form-input" id="c-hora">
+        <label class="form-label">DESDE</label>
+        <select class="form-input" id="c-desde" onchange="validarRangoHora()">
           <option value="0">07:00</option><option value="1">07:30</option>
           <option value="2">08:00</option><option value="3">08:30</option>
           <option value="4">09:00</option><option value="5">09:30</option>
@@ -1079,22 +1079,44 @@ body {
           <option value="20">17:00</option><option value="21">17:30</option>
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">HASTA</label>
+        <select class="form-input" id="c-hasta" onchange="validarRangoHora()">
+          <option value="1">07:30</option>
+          <option value="2">08:00</option><option value="3">08:30</option>
+          <option value="4">09:00</option><option value="5">09:30</option>
+          <option value="6">10:00</option><option value="7">10:30</option>
+          <option value="8">11:00</option><option value="9">11:30</option>
+          <option value="10">12:00</option><option value="11">12:30</option>
+          <option value="12">13:00</option><option value="13">13:30</option>
+          <option value="14">14:00</option><option value="15">14:30</option>
+          <option value="16">15:00</option><option value="17">15:30</option>
+          <option value="18">16:00</option><option value="19">16:30</option>
+          <option value="20">17:00</option><option value="21">17:30</option>
+          <option value="22">18:00</option>
+        </select>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">AULA / SALA</label>
-      <input class="form-input" id="c-aula" placeholder="Aula 12">
-    </div>
-    <div class="form-group">
-      <label class="form-label">TIPO</label>
-      <select class="form-input" id="c-tipo">
-        <option value="">Sin especificar</option>
-        <option value="teoria">📖 Teoría</option>
-        <option value="practica">🔧 Práctica</option>
-      </select>
+    <!-- Preview del rango -->
+    <div id="c-rango-preview" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);background:rgba(94,234,212,0.07);border:1px solid rgba(94,234,212,0.2);border-radius:10px;padding:7px 12px;margin-bottom:4px;text-align:center;"></div>
+    <div id="c-rango-error" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--danger);text-align:center;min-height:16px;margin-bottom:8px;"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">AULA / SALA</label>
+        <input class="form-input" id="c-aula" placeholder="Aula 12">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TIPO</label>
+        <select class="form-input" id="c-tipo">
+          <option value="">Sin esp.</option>
+          <option value="teoria">📖 Teoría</option>
+          <option value="practica">🔧 Práctica</option>
+        </select>
+      </div>
     </div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" id="c-btn-eliminar" style="display:none;background:rgba(248,113,113,0.1);color:var(--danger);border:1px solid rgba(248,113,113,0.2);" onclick="eliminarClaseDesdeModal()">🗑️ Eliminar</button>
-      <button class="mbtn mbtn-cancel" id="c-btn-cancelar" onclick="closeModal('modal-clase')">Cancelar</button>
+      <button class="mbtn mbtn-cancel" onclick="closeModal('modal-clase')">Cancelar</button>
       <button class="mbtn mbtn-ok" onclick="guardarClase()">Guardar</button>
     </div>
   </div>
@@ -1750,29 +1772,66 @@ let editingClaseId = null;
 window.accionClase = function(id) {
   const c = state.horario.find(x => x.id === id);
   if (!c) return;
-  editingClaseId = id;
 
-  // Primero abrir el modal (que también llama fillSelects por ser edición)
+  // Si tiene groupId, editar el grupo completo (usar el primer slot del grupo)
+  let editTarget = c;
+  let desdeSlot  = c.hora;
+  let hastaSlot  = c.horaHasta !== undefined ? c.horaHasta : c.hora + 1;
+
+  if (c.groupId) {
+    const grupo = state.horario.filter(x => x.groupId === c.groupId).sort((a,b) => a.hora - b.hora);
+    editTarget = grupo[0];
+    desdeSlot  = grupo[0].hora;
+    hastaSlot  = grupo[grupo.length - 1].hora + 1;
+  }
+
+  editingClaseId = editTarget.id;
+
   fillSelects();
   document.getElementById('modal-clase-title').innerHTML = 'Editar <span>clase</span>';
   document.getElementById('c-btn-eliminar').style.display = '';
-
-  // Abrir modal
   document.getElementById('modal-clase').classList.add('open');
 
-  // Setear valores DESPUÉS de que el modal y los options estén en el DOM
   requestAnimationFrame(() => {
-    document.getElementById('c-materia').value = c.materiaId;
-    document.getElementById('c-dia').value     = c.dia;
-    document.getElementById('c-hora').value    = c.hora;
-    document.getElementById('c-aula').value    = c.aula && c.aula !== '—' ? c.aula : '';
-    document.getElementById('c-tipo').value    = c.tipo || '';
+    document.getElementById('c-materia').value = editTarget.materiaId;
+    document.getElementById('c-dia').value     = editTarget.dia;
+    document.getElementById('c-desde').value   = desdeSlot;
+    document.getElementById('c-hasta').value   = hastaSlot;
+    document.getElementById('c-aula').value    = editTarget.aula && editTarget.aula !== '—' ? editTarget.aula : '';
+    document.getElementById('c-tipo').value    = editTarget.tipo || '';
+    validarRangoHora();
   });
 };
 
+function validarRangoHora() {
+  const desde = parseInt(document.getElementById('c-desde').value);
+  const hasta = parseInt(document.getElementById('c-hasta').value);
+  const preview = document.getElementById('c-rango-preview');
+  const error   = document.getElementById('c-rango-error');
+  if (hasta <= desde) {
+    preview.textContent = '';
+    error.textContent   = '⚠️ "Hasta" debe ser mayor que "Desde"';
+    return false;
+  }
+  error.textContent = '';
+  const bloques = hasta - desde;
+  const mins    = bloques * 30;
+  const horas   = Math.floor(mins / 60);
+  const resto   = mins % 60;
+  const durStr  = horas > 0 ? `${horas}h${resto > 0 ? resto + 'min' : ''}` : `${mins}min`;
+  preview.textContent = `${SLOTS[desde]} → ${SLOTS[hasta]}  ·  ${bloques} bloque${bloques>1?'s':''} (${durStr})`;
+  return true;
+}
+
 function eliminarClaseDesdeModal() {
   if (!editingClaseId) return;
-  state.horario = state.horario.filter(x => x.id !== editingClaseId);
+  // Al editar un bloque, eliminar todos los bloques del mismo grupo (mismo groupId)
+  const c = state.horario.find(x => x.id === editingClaseId);
+  if (c && c.groupId) {
+    state.horario = state.horario.filter(x => x.groupId !== c.groupId);
+  } else {
+    state.horario = state.horario.filter(x => x.id !== editingClaseId);
+  }
   editingClaseId = null;
   closeModal('modal-clase');
   showToast('🗑️ Clase eliminada');
@@ -1782,23 +1841,45 @@ function eliminarClaseDesdeModal() {
 function guardarClase(){
   const matId = parseInt(document.getElementById('c-materia').value);
   const dia   = parseInt(document.getElementById('c-dia').value);
-  const hora  = parseInt(document.getElementById('c-hora').value);
+  const desde = parseInt(document.getElementById('c-desde').value);
+  const hasta = parseInt(document.getElementById('c-hasta').value);
   const aula  = sanitize(document.getElementById('c-aula').value.trim()) || '';
   const tipo  = document.getElementById('c-tipo').value || '';
 
+  if (!validarRangoHora()) return;
+
   if (editingClaseId) {
-    state.horario = state.horario.map(c =>
-      c.id === editingClaseId ? { ...c, materiaId:matId, dia, hora, aula, tipo } : c
-    );
+    // Al editar: eliminar todos los bloques del grupo anterior y recrear
+    const c = state.horario.find(x => x.id === editingClaseId);
+    const oldGroupId = c?.groupId;
+    if (oldGroupId) {
+      state.horario = state.horario.filter(x => x.groupId !== oldGroupId);
+    } else {
+      state.horario = state.horario.filter(x => x.id !== editingClaseId);
+    }
+    editingClaseId = null;
     showToast('✅ Clase actualizada');
   } else {
-    state.horario.push({ id:Date.now(), materiaId:matId, dia, hora, aula, tipo });
-    showToast('🗓️ Clase agregada');
+    showToast(`🗓️ Clase agregada (${hasta - desde} bloque${hasta-desde>1?'s':''})`);
+  }
+
+  // Crear un bloque por cada slot de 30 minutos en el rango
+  const groupId = Date.now();
+  for (let slot = desde; slot < hasta; slot++) {
+    state.horario.push({
+      id: groupId + slot,
+      groupId,            // para poder editar/eliminar todo el bloque junto
+      materiaId: matId,
+      dia,
+      hora: slot,
+      horaHasta: hasta,  // guardamos el fin del bloque para poder editarlo
+      aula,
+      tipo,
+    });
   }
 
   document.getElementById('c-aula').value = '';
   document.getElementById('c-tipo').value = '';
-  editingClaseId = null;
   closeModal('modal-clase');
   saveState(); render();
 }
@@ -2186,8 +2267,12 @@ function openModal(id) {
   if(id==='modal-clase' && !editingClaseId) {
     document.getElementById('modal-clase-title').innerHTML='Agregar <span>clase</span>';
     document.getElementById('c-btn-eliminar').style.display = 'none';
-    document.getElementById('c-aula').value = '';
-    document.getElementById('c-tipo').value = '';
+    document.getElementById('c-aula').value  = '';
+    document.getElementById('c-tipo').value  = '';
+    document.getElementById('c-desde').value = '2';  // 08:00 default
+    document.getElementById('c-hasta').value = '4';  // 09:00 default
+    document.getElementById('c-rango-error').textContent = '';
+    validarRangoHora();
   }
   if(id==='modal-backup') {
     actualizarInfoBackup();
