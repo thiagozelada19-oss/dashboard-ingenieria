@@ -1568,31 +1568,6 @@ function rMaterias(){
   }
 
   el.innerHTML = html;
-
-    return `<div class="mat-card">
-      <div class="mat-stripe" style="background:${col};"></div>
-      <div class="mat-body">
-        <div class="mat-head">
-          <div>
-            <div class="mat-name">${m.nombre}</div>
-            <div class="mat-code">${m.codigo}</div>
-          </div>
-          <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${col};">${p??'—'}</div>
-        </div>
-        <span class="mat-estado-badge ${est.cls}">${est.icon} ${est.txt}</span>
-        <div class="mat-notas">
-          <div class="nota-box"><div class="nota-lbl">1° PARC</div><div class="nota-num ${nColor(m.n1)}">${m.n1??'—'}</div></div>
-          <div class="nota-box"><div class="nota-lbl">2° PARC</div><div class="nota-num ${nColor(m.n2)}">${m.n2??'—'}</div></div>
-          <div class="nota-box"><div class="nota-lbl">FINAL</div><div class="nota-num ${nColor(m.nf)}">${m.nf??'—'}</div></div>
-        </div>
-        <div class="barra-wrap"><div class="barra-fill" style="width:${barraProg}%;background:${barraCol};transition:width 0.6s ease;"></div></div>
-        <div class="mat-actions">
-          <button class="btn-edit" onclick="editarMateria(${m.id})">✏️ Editar</button>
-          <button class="btn-del" onclick="eliminarMateria(${m.id})">🗑️ Eliminar</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 let filtroActual='todas';
