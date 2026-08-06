@@ -1056,33 +1056,32 @@ body {
       <div class="form-group">
         <label class="form-label">DESDE</label>
         <select class="form-input" id="c-desde" onchange="onDesdeChange()">
-          <option value="0">07:00</option><option value="1">07:30</option>
-          <option value="2">08:00</option><option value="3">08:30</option>
-          <option value="4">09:00</option><option value="5">09:30</option>
-          <option value="6">10:00</option><option value="7">10:30</option>
-          <option value="8">11:00</option><option value="9">11:30</option>
-          <option value="10">12:00</option><option value="11">12:30</option>
-          <option value="12">13:00</option><option value="13">13:30</option>
-          <option value="14">14:00</option><option value="15">14:30</option>
-          <option value="16">15:00</option><option value="17">15:30</option>
-          <option value="18">16:00</option><option value="19">16:30</option>
-          <option value="20">17:00</option><option value="21">17:30</option>
+          <option value="0">07:00</option>
+          <option value="2">08:00</option>
+          <option value="4">09:00</option>
+          <option value="6">10:00</option>
+          <option value="8">11:00</option>
+          <option value="10">12:00</option>
+          <option value="12">13:00</option>
+          <option value="14">14:00</option>
+          <option value="16">15:00</option>
+          <option value="18">16:00</option>
+          <option value="20">17:00</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">HASTA</label>
         <select class="form-input" id="c-hasta" onchange="validarRangoHora()">
-          <option value="1">07:30</option>
-          <option value="2">08:00</option><option value="3">08:30</option>
-          <option value="4">09:00</option><option value="5">09:30</option>
-          <option value="6">10:00</option><option value="7">10:30</option>
-          <option value="8">11:00</option><option value="9">11:30</option>
-          <option value="10">12:00</option><option value="11">12:30</option>
-          <option value="12">13:00</option><option value="13">13:30</option>
-          <option value="14">14:00</option><option value="15">14:30</option>
-          <option value="16">15:00</option><option value="17">15:30</option>
-          <option value="18">16:00</option><option value="19">16:30</option>
-          <option value="20">17:00</option><option value="21">17:30</option>
+          <option value="2">08:00</option>
+          <option value="4">09:00</option>
+          <option value="6">10:00</option>
+          <option value="8">11:00</option>
+          <option value="10">12:00</option>
+          <option value="12">13:00</option>
+          <option value="14">14:00</option>
+          <option value="16">15:00</option>
+          <option value="18">16:00</option>
+          <option value="20">17:00</option>
           <option value="22">18:00</option>
         </select>
       </div>
@@ -1384,7 +1383,7 @@ const SLOTS = [
   '07:00','07:30','08:00','08:30','09:00','09:30',
   '10:00','10:30','11:00','11:30','12:00','12:30',
   '13:00','13:30','14:00','14:30','15:00','15:30',
-  '16:00','16:30','17:00','17:30'
+  '16:00','16:30','17:00','17:30','18:00'
 ];
 
 // ── UTILS ──
@@ -1684,28 +1683,29 @@ function rHorario(){
   const g=document.getElementById('horario-grid');
   if(!g) return;
 
-  // Slots de 30 minutos: índice 0=07:00, 1=07:30, 2=08:00 ... 21=17:30 (definidos globalmente en SLOTS)
+  // Cada fila de la grilla ahora representa 1 hora completa.
+  // Internamente los bloques siguen guardados en slots de 30min (ver SLOTS),
+  // pero solo miramos el slot "en punto" (índices pares) de cada hora.
+  const HORA_MAX = 10; // hi máximo → SLOTS[20] = 17:00
 
-  // Rango dinámico basado en clases existentes, con mínimo sensato
-  const horas = state.horario.map(c=>c.hora).filter(h=>h>=0 && h<SLOTS.length);
-  const sMin = horas.length ? Math.min(...horas) : 2;   // default 08:00
-  const sMax = horas.length ? Math.max(...horas) : 17;  // default 15:30
-  // Padding de 1 slot arriba y abajo para contexto
-  const rangeMin = Math.max(0, sMin - 1);
-  const rangeMax = Math.min(SLOTS.length - 1, sMax + 1);
+  const horasOcupadas = state.horario.map(c => Math.floor(c.hora/2)).filter(h => h>=0 && h<=HORA_MAX);
+  const hMin = horasOcupadas.length ? Math.min(...horasOcupadas) : 1; // default 08:00
+  const hMax = horasOcupadas.length ? Math.max(...horasOcupadas) : 8; // default 15:00
+  const rangeMin = Math.max(0, hMin - 1);
+  const rangeMax = Math.min(HORA_MAX, hMax + 1);
 
   let html = '<div></div>';
   DIAS.forEach(d => html += `<div class="hcell-head">${d}</div>`);
 
-  for (let si = rangeMin; si <= rangeMax; si++) {
-    const esMedia = si % 2 === 1; // slot :30
-    html += `<div class="hcell-hora ${esMedia?'half':''}">${SLOTS[si]}</div>`;
+  for (let hi = rangeMin; hi <= rangeMax; hi++) {
+    const si = hi * 2; // slot interno "en punto" correspondiente a esta hora
+    html += `<div class="hcell-hora">${SLOTS[si]}</div>`;
 
     for (let di = 0; di < 5; di++) {
       const clases = state.horario.filter(x => x.dia === di && x.hora === si);
 
       if (clases.length === 0) {
-        html += `<div class="hcell ${esMedia?'half-empty':'empty'}"></div>`;
+        html += `<div class="hcell empty"></div>`;
       } else if (clases.length === 1) {
         const c = clases[0];
         const m = getM(c.materiaId);
@@ -1752,6 +1752,12 @@ window.accionClase = function(id) {
 
   editingClaseId = editTarget.id;
 
+  // Redondeamos a horas completas por si la clase venía guardada con media hora
+  // (formato anterior), así siempre calza con una opción válida del select.
+  desdeSlot = desdeSlot - (desdeSlot % 2);
+  hastaSlot = hastaSlot % 2 === 0 ? hastaSlot : hastaSlot + 1;
+  if (hastaSlot <= desdeSlot) hastaSlot = desdeSlot + 2;
+
   fillSelects();
   document.getElementById('modal-clase-title').innerHTML = 'Editar <span>clase</span>';
   document.getElementById('c-btn-eliminar').style.display = '';
@@ -1793,11 +1799,9 @@ function validarRangoHora() {
   }
   error.textContent = '';
   const bloques = hasta - desde;
-  const mins    = bloques * 30;
-  const horas   = Math.floor(mins / 60);
-  const resto   = mins % 60;
-  const durStr  = horas > 0 ? `${horas}h${resto > 0 ? resto + 'min' : ''}` : `${mins}min`;
-  preview.textContent = `${SLOTS[desde]} → ${SLOTS[hasta]}  ·  ${bloques} bloque${bloques>1?'s':''} (${durStr})`;
+  const horas   = bloques / 2; // cada bloque interno = 30min, ahora siempre se eligen horas completas
+  const horaStr = horas === 1 ? '1 hora' : `${horas} horas`;
+  preview.textContent = `${SLOTS[desde]} → ${SLOTS[hasta]}  ·  ${horaStr}`;
   return true;
 }
 
@@ -1838,7 +1842,7 @@ function guardarClase(){
     editingClaseId = null;
     showToast('✅ Clase actualizada');
   } else {
-    showToast(`🗓️ Clase agregada (${hasta - desde} bloque${hasta-desde>1?'s':''})`);
+    showToast(`🗓️ Clase agregada (${(hasta - desde)/2} hora${(hasta-desde)/2>1?'s':''})`);
   }
 
   // Crear un bloque por cada slot de 30 minutos en el rango
