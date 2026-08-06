@@ -55,6 +55,10 @@
   --accent2: #818cf8;
   --accent3: #fb923c;
   --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --accent6: #facc15;
+  --accent7: #22d3ee;
+  --accent8: #fb7185;
   --text: #e2e8f0;
   --muted: #64748b;
   --danger: #f87171;
@@ -347,6 +351,10 @@ body {
 .hcell.c-azul   { background:rgba(129,140,248,0.13); border-color:rgba(129,140,248,0.32); color:var(--accent2); }
 .hcell.c-naranja{ background:rgba(251,146,60,0.13); border-color:rgba(251,146,60,0.32); color:var(--accent3); }
 .hcell.c-rosa   { background:rgba(244,114,182,0.13); border-color:rgba(244,114,182,0.32); color:var(--accent4); }
+.hcell.c-morado  { background:rgba(167,139,250,0.13); border-color:rgba(167,139,250,0.32); color:var(--accent5); }
+.hcell.c-amarillo{ background:rgba(250,204,21,0.13);  border-color:rgba(250,204,21,0.32);  color:var(--accent6); }
+.hcell.c-celeste { background:rgba(34,211,238,0.13);  border-color:rgba(34,211,238,0.32);  color:var(--accent7); }
+.hcell.c-rojo    { background:rgba(251,113,133,0.13); border-color:rgba(251,113,133,0.32); color:var(--accent8); }
 .hcell-tipo { font-size:7px; opacity:0.75; font-family:'Space Mono',monospace; letter-spacing:0.3px; }
 .hcell-aula { font-size:7px; opacity:0.65; font-family:'Space Mono',monospace; }
 .hcell-multi {
@@ -905,6 +913,10 @@ body {
           <option value="azul">🔵 Azul</option>
           <option value="naranja">🟠 Naranja</option>
           <option value="rosa">🩷 Rosa</option>
+          <option value="morado">🟣 Morado</option>
+          <option value="amarillo">🟡 Amarillo</option>
+          <option value="celeste">🩵 Celeste</option>
+          <option value="rojo">🔴 Rojo</option>
         </select>
       </div>
     </div>
@@ -1043,7 +1055,7 @@ body {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">DESDE</label>
-        <select class="form-input" id="c-desde" onchange="validarRangoHora()">
+        <select class="form-input" id="c-desde" onchange="onDesdeChange()">
           <option value="0">07:00</option><option value="1">07:30</option>
           <option value="2">08:00</option><option value="3">08:30</option>
           <option value="4">09:00</option><option value="5">09:30</option>
@@ -1367,6 +1379,13 @@ if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.ex
 
 const HORAS = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
 const DIAS  = ['LUN','MAR','MIÉ','JUE','VIE'];
+// Slots de 30 minutos: índice 0=07:00, 1=07:30, 2=08:00 ... 21=17:30
+const SLOTS = [
+  '07:00','07:30','08:00','08:30','09:00','09:30',
+  '10:00','10:30','11:00','11:30','12:00','12:30',
+  '13:00','13:30','14:00','14:30','15:00','15:30',
+  '16:00','16:30','17:00','17:30'
+];
 
 // ── UTILS ──
 const getM = id => state.materias.find(m => m.id == id); // == para tolerar string/number
@@ -1388,7 +1407,13 @@ function urgBadge(dias,done){
   if(dias<=7) return {cls:'bp',txt:`⏰ ${dias}d`};
   return {cls:'bo',txt:`${dias}d`};
 }
-function colorCSS(c){ return c==='verde'?'var(--accent)':c==='azul'?'var(--accent2)':c==='naranja'?'var(--accent3)':'var(--accent4)'; }
+function colorCSS(c){
+  const map = {
+    verde:'var(--accent)', azul:'var(--accent2)', naranja:'var(--accent3)', rosa:'var(--accent4)',
+    morado:'var(--accent5)', amarillo:'var(--accent6)', celeste:'var(--accent7)', rojo:'var(--accent8)'
+  };
+  return map[c] || 'var(--accent)';
+}
 
 function showToast(msg, duration=2500) {
   const t = document.getElementById('toast');
@@ -1659,13 +1684,7 @@ function rHorario(){
   const g=document.getElementById('horario-grid');
   if(!g) return;
 
-  // Slots de 30 minutos: índice 0=07:00, 1=07:30, 2=08:00 ... 21=17:30
-  const SLOTS = [
-    '07:00','07:30','08:00','08:30','09:00','09:30',
-    '10:00','10:30','11:00','11:30','12:00','12:30',
-    '13:00','13:30','14:00','14:30','15:00','15:30',
-    '16:00','16:30','17:00','17:30'
-  ];
+  // Slots de 30 minutos: índice 0=07:00, 1=07:30, 2=08:00 ... 21=17:30 (definidos globalmente en SLOTS)
 
   // Rango dinámico basado en clases existentes, con mínimo sensato
   const horas = state.horario.map(c=>c.hora).filter(h=>h>=0 && h<SLOTS.length);
@@ -1748,6 +1767,19 @@ window.accionClase = function(id) {
     validarRangoHora();
   });
 };
+
+function onDesdeChange() {
+  // Si "Hasta" quedó igual o antes que el nuevo "Desde", lo corregimos
+  // automáticamente en vez de dejar el formulario bloqueado en silencio.
+  const desde = parseInt(document.getElementById('c-desde').value);
+  const hastaSel = document.getElementById('c-hasta');
+  const hasta = parseInt(hastaSel.value);
+  if (hasta <= desde) {
+    const maxHasta = Math.max(...Array.from(hastaSel.options).map(o => parseInt(o.value)));
+    hastaSel.value = Math.min(desde + 2, maxHasta); // +1 hora por defecto
+  }
+  validarRangoHora();
+}
 
 function validarRangoHora() {
   const desde = parseInt(document.getElementById('c-desde').value);
