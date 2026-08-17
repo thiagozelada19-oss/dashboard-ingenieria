@@ -324,18 +324,18 @@ body {
 .horario-scroll { overflow-x:auto; padding-bottom:8px; }
 .hgrid {
   display:grid;
-  grid-template-columns: 46px repeat(5,minmax(58px,1fr));
+  grid-template-columns: 66px repeat(5,minmax(58px,1fr));
   gap:2px;
-  min-width: 340px;
+  min-width: 360px;
 }
 .hcell-head {
   text-align:center; font-family:'Space Mono',monospace; font-size:10px;
   color:var(--muted); padding:8px 2px; font-weight:700;
 }
 .hcell-hora {
-  font-family:'Space Mono',monospace; font-size:8px; color:var(--muted);
+  font-family:'Space Mono',monospace; font-size:7.5px; color:var(--muted);
   display:flex; align-items:center; justify-content:flex-end;
-  padding-right:5px; height:36px;
+  padding-right:5px; height:36px; white-space:nowrap;
 }
 .hcell-hora.half { color: rgba(100,116,139,0.45); font-size:7px; }
 .hcell {
@@ -936,9 +936,9 @@ body {
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" id="m-nf-label">FINAL (0-100, si aplica)</label>
-      <input class="form-input" id="m-nf" type="number" min="0" max="100" step="1" placeholder="—"
-        oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>100)?'var(--danger)':''">
+      <label class="form-label" id="m-nf-label">FINAL (0-10, si aplica)</label>
+      <input class="form-input" id="m-nf" type="number" min="0" max="10" step="0.5" placeholder="—"
+        oninput="this.style.borderColor=this.value&&(+this.value<0||+this.value>10)?'var(--danger)':''">
     </div>
     <div class="form-group">
       <label class="form-label">ESTADO</label>
@@ -1100,6 +1100,7 @@ body {
           <option value="">Sin esp.</option>
           <option value="teoria">📖 Teoría</option>
           <option value="practica">🔧 Práctica</option>
+          <option value="laboratorio">🧪 Laboratorio</option>
         </select>
       </div>
     </div>
@@ -1389,10 +1390,11 @@ const SLOTS = [
 // ── UTILS ──
 const getM = id => state.materias.find(m => m.id == id); // == para tolerar string/number
 function prom(m){
-  const ns=[m.n1,m.n2,m.nf].filter(n=>n!=null);
+  // n1/n2 están en escala 0-100, nf en escala 0-10: normalizamos nf a 0-100 para promediar parejo.
+  const ns=[m.n1, m.n2, m.nf!=null ? m.nf*10 : null].filter(n=>n!=null);
   return ns.length?(ns.reduce((a,b)=>a+b,0)/ns.length).toFixed(1):null;
 }
-function nColor(n){ return n==null?'':n>=70?'ok':n>=60?'med':'mal'; }
+function nColor(n, max=100){ if(n==null) return ''; const pct=(n/max)*100; return pct>=70?'ok':pct>=60?'med':'mal'; }
 function diasHasta(f){
   const h=new Date(); h.setHours(0,0,0,0);
   const t=new Date(f+'T12:00'); t.setHours(0,0,0,0);
@@ -1543,13 +1545,13 @@ function rMaterias(){
       ? `<div class="mat-notas" style="justify-content:center;">
            <div class="nota-box" style="min-width:80px;">
              <div class="nota-lbl">NOTA FINAL</div>
-             <div class="nota-num ${nColor(m.nf)}">${m.nf??'—'}</div>
+             <div class="nota-num ${nColor(m.nf,10)}">${m.nf??'—'}</div>
            </div>
          </div>`
       : `<div class="mat-notas">
            <div class="nota-box"><div class="nota-lbl">1° PARC</div><div class="nota-num ${nColor(m.n1)}">${m.n1??'—'}</div></div>
            <div class="nota-box"><div class="nota-lbl">2° PARC</div><div class="nota-num ${nColor(m.n2)}">${m.n2??'—'}</div></div>
-           <div class="nota-box"><div class="nota-lbl">FINAL</div><div class="nota-num ${nColor(m.nf)}">${m.nf??'—'}</div></div>
+           <div class="nota-box"><div class="nota-lbl">FINAL</div><div class="nota-num ${nColor(m.nf,10)}">${m.nf??'—'}</div></div>
          </div>`;
 
     return `<div class="mat-card${archivadaCls}">
@@ -1699,7 +1701,7 @@ function rHorario(){
 
   for (let hi = rangeMin; hi <= rangeMax; hi++) {
     const si = hi * 2; // slot interno "en punto" correspondiente a esta hora
-    html += `<div class="hcell-hora">${SLOTS[si]}</div>`;
+    html += `<div class="hcell-hora">${SLOTS[si]}-${SLOTS[si+2]}</div>`;
 
     for (let di = 0; di < 5; di++) {
       const clases = state.horario.filter(x => x.dia === di && x.hora === si);
@@ -1711,7 +1713,7 @@ function rHorario(){
         const m = getM(c.materiaId);
         const nc = m ? `c-${m.color}` : 'c-verde';
         const short = m ? m.nombre.split(' ')[0].substring(0,5) : '?';
-        const tipoLbl = c.tipo === 'practica' ? 'PRÁCT' : c.tipo === 'teoria' ? 'TEÓR' : '';
+        const tipoLbl = c.tipo === 'practica' ? 'PRÁCT' : c.tipo === 'teoria' ? 'TEÓR' : c.tipo === 'laboratorio' ? 'LAB' : '';
         const aulaStr = c.aula && c.aula !== '—' ? c.aula : '';
         html += `<div class="hcell ${nc}" onclick="accionClase(${c.id})">
           <span>${short}</span>
@@ -1875,11 +1877,15 @@ function rAvance(){
   const aprobadas=state.materias.filter(m=>{const p=prom(m);return p&&parseFloat(p)>=60;}).length;
   const ps=state.materias.map(m=>parseFloat(prom(m)||0)).filter(p=>p>0);
   const pg=ps.length?(ps.reduce((a,b)=>a+b,0)/ps.length).toFixed(1):'—';
+  // Promedio solo de notas finales (escala 0-10), independiente del promedio general de arriba
+  const nfs=state.materias.map(m=>m.nf).filter(n=>n!=null);
+  const pf=nfs.length?(nfs.reduce((a,b)=>a+b,0)/nfs.length).toFixed(1):'—';
   const pend=state.tareas.filter(t=>!t.completada).length;
   const proxExam=state.examenes.filter(e=>{ const d=diasHasta(e.fecha); return d>=0&&d<=30; }).length;
 
   sr.innerHTML=[
     {icon:'⭐',num:pg,lbl:'Promedio',col:'var(--accent)'},
+    {icon:'🎓',num:pf,lbl:'Prom. finales (0-10)',col:'var(--accent5)'},
     {icon:'📚',num:total,lbl:'Materias',col:'var(--accent2)'},
     {icon:'📋',num:pend,lbl:'Tareas pend.',col:'var(--accent3)'},
     {icon:'📅',num:proxExam,lbl:'Exám. próximos',col:'var(--accent4)'},
@@ -2282,12 +2288,12 @@ function onEstadoChange() {
   const nfLabel = document.getElementById('m-nf-label');
   if (estado === 'promocion') {
     parcialesWrap.style.display = 'none';
-    nfLabel.textContent = 'NOTA FINAL DE PROMOCIÓN (0-100)';
+    nfLabel.textContent = 'NOTA FINAL DE PROMOCIÓN (0-10)';
     document.getElementById('m-n1').value = '';
     document.getElementById('m-n2').value = '';
   } else {
     parcialesWrap.style.display = '';
-    nfLabel.textContent = 'FINAL (0-100, si aplica)';
+    nfLabel.textContent = 'FINAL (0-10, si aplica)';
   }
 }
 function sanitize(str) {
@@ -2298,25 +2304,26 @@ function sanitize(str) {
     .trim().substring(0, 120);
 }
 
-// ── VALIDACIÓN DE NOTA (0-10) ──
-function parseNota(val) {
+// ── VALIDACIÓN DE NOTA ──
+// n1/n2 (parciales): escala 0-100, enteros. nf (final): escala 0-10, admite medios puntos.
+function parseNota(val, max = 100, allowDecimal = false) {
   if (val === '' || val === null || val === undefined) return null;
   const n = parseFloat(val);
   if (isNaN(n)) return null;
-  return Math.min(100, Math.max(0, Math.round(n)));
+  const clamped = Math.min(max, Math.max(0, n));
+  return allowDecimal ? Math.round(clamped * 2) / 2 : Math.round(clamped);
 }
 
 // ── CÁLCULO AUTOMÁTICO DE ESTADO ──
-// Regular: ambos parciales ≥ 60 → puede rendir final
-// Promoción: no aplica con escala 0-100 (la facultad no promociona en este sistema)
-// El usuario puede fijar el estado manualmente
+// Regular: ambos parciales ≥ 60 (escala 0-100) → puede rendir final
+// Final: nf ≥ 6 (escala 0-10) → aprobada
 function calcularEstadoAuto(n1, n2, nf, estadoActual) {
   if (['aprobada','libre','pendiente'].includes(estadoActual)) return estadoActual;
 
   if (n1 !== null && n2 !== null) {
     const ambosRegulares = n1 >= 60 && n2 >= 60;
     if (ambosRegulares) {
-      if (nf !== null) return nf >= 60 ? 'aprobada' : 'cursando';
+      if (nf !== null) return nf >= 6 ? 'aprobada' : 'cursando';
       return 'sinpromoc'; // Regular → debe rendir final
     }
     // Si alguno < 60, sigue cursando (libre en el peor caso pero el usuario lo elige)
@@ -2332,12 +2339,12 @@ function guardarMateria(){
 
   const n1 = parseNota(document.getElementById('m-n1').value);
   const n2 = parseNota(document.getElementById('m-n2').value);
-  const nf = parseNota(document.getElementById('m-nf').value);
+  const nf = parseNota(document.getElementById('m-nf').value, 10, true);
 
   // Validar rango por JS (min/max HTML no valida en .value)
-  for (const [lbl, v] of [['1° Parcial', n1],['2° Parcial', n2],['Final', nf]]) {
-    if (v !== null && (v < 0 || v > 100)) {
-      showToast(`⚠️ ${lbl}: la nota debe estar entre 0 y 100`); return;
+  for (const [lbl, v, max] of [['1° Parcial', n1, 100],['2° Parcial', n2, 100],['Final', nf, 10]]) {
+    if (v !== null && (v < 0 || v > max)) {
+      showToast(`⚠️ ${lbl}: la nota debe estar entre 0 y ${max}`); return;
     }
   }
 
