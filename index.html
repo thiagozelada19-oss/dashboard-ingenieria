@@ -496,6 +496,13 @@ body {
 }
 .plan-materia.pm-bloqueada::before { background: var(--muted); }
 
+.plan-materia.pm-regular {
+  background: rgba(34,211,238,0.07);
+  border-color: rgba(34,211,238,0.25);
+  opacity: 1;
+}
+.plan-materia.pm-regular::before { background: var(--accent7); }
+
 .pm-check {
   width: 22px; height: 22px; border-radius: 7px;
   border: 2px solid var(--border);
@@ -504,6 +511,7 @@ body {
   transition: all 0.2s;
 }
 .pm-aprobada .pm-check { background: var(--success); border-color: var(--success); color: #0b0d12; }
+.pm-regular .pm-check { border-color: var(--accent7); color: var(--accent7); }
 .pm-disponible .pm-check { border-color: var(--accent2); }
 .pm-bloqueada .pm-check { opacity: 0.4; }
 
@@ -521,6 +529,7 @@ body {
   padding: 2px 7px; border-radius: 999px;
 }
 .pme-aprobada    { background: rgba(74,222,128,0.15);  color: var(--success); }
+.pme-regular     { background: rgba(34,211,238,0.15);  color: var(--accent7); }
 .pme-promocion   { background: rgba(94,234,212,0.15);  color: var(--accent); }
 .pme-sinpromoc   { background: rgba(251,146,60,0.15);  color: var(--accent3); }
 .pme-disponible { background: rgba(129,140,248,0.15); color: var(--accent2); }
@@ -535,6 +544,44 @@ body {
 }
 .pm-corr-tag.ok { border-color: rgba(74,222,128,0.3); color: var(--success); background: rgba(74,222,128,0.07); }
 .pm-corr-tag.falta { border-color: rgba(248,113,113,0.3); color: var(--danger); background: rgba(248,113,113,0.07); }
+.pm-corr-tag.debil { border-style: dashed; }
+
+/* Modal de detalle de materia (Correlatividades) */
+.cm-estado-btns { display: flex; gap: 6px; }
+.cm-estado-btn {
+  flex: 1; text-align: center; padding: 10px 4px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--panel2);
+  font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+  color: var(--muted); cursor: pointer; transition: all 0.2s;
+}
+.cm-estado-btn.on.libre     { background: rgba(100,116,139,0.15); border-color: var(--muted); color: var(--text); }
+.cm-estado-btn.on.regular   { background: rgba(34,211,238,0.15); border-color: var(--accent7); color: var(--accent7); }
+.cm-estado-btn.on.aprobada  { background: rgba(74,222,128,0.15); border-color: var(--success); color: var(--success); }
+
+.cm-section { margin-top: 16px; }
+.cm-section-label {
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px;
+  color: var(--muted); margin-bottom: 7px;
+}
+.cm-corr-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--panel2); border: 1px solid var(--border);
+  margin-bottom: 5px; font-size: 12px;
+}
+.cm-corr-item .badge {
+  font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+  padding: 2px 6px; border-radius: 999px; flex-shrink: 0;
+}
+.cm-corr-item.ok .badge    { background: rgba(74,222,128,0.15); color: var(--success); }
+.cm-corr-item.parcial .badge { background: rgba(34,211,238,0.15); color: var(--accent7); }
+.cm-corr-item.falta .badge { background: rgba(248,113,113,0.15); color: var(--danger); }
+.cm-empty { font-size: 11px; color: var(--muted); font-style: italic; }
+.cm-bloque-note {
+  font-size: 10px; color: var(--accent3); background: rgba(251,146,60,0.08);
+  border: 1px solid rgba(251,146,60,0.2); border-radius: 8px;
+  padding: 7px 10px; margin-top: 4px; line-height: 1.5;
+}
 
 /* Modal plan materia */
 .pm-nota-input {
@@ -837,17 +884,39 @@ body {
   <section id="sec-corr" class="section">
     <div class="plan-leyenda">
       <div class="ley-item"><div class="ley-dot" style="background:var(--success);"></div>Aprobada</div>
+      <div class="ley-item"><div class="ley-dot" style="background:var(--accent7);"></div>Regular</div>
       <div class="ley-item"><div class="ley-dot" style="background:var(--accent2);"></div>Disponible</div>
       <div class="ley-item"><div class="ley-dot" style="background:var(--muted);"></div>Bloqueada</div>
     </div>
     <div class="chips" id="chips-corr">
       <div class="chip on" onclick="filtrarCorr('todas',this)">Todas</div>
       <div class="chip" onclick="filtrarCorr('disponibles',this)">Puedo cursar ✅</div>
+      <div class="chip" onclick="filtrarCorr('regulares',this)">Regulares 📘</div>
       <div class="chip" onclick="filtrarCorr('bloqueadas',this)">Bloqueadas 🔒</div>
       <div class="chip" onclick="filtrarCorr('aprobadas',this)">Aprobadas ✓</div>
     </div>
     <div id="corr-list"></div>
   </section>
+
+  <!-- Detalle de materia en Correlatividades -->
+  <div class="modal-overlay" id="modal-corr-materia">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="cm-title">Materia</div>
+      <div id="cm-subtitle" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:-14px;margin-bottom:14px;"></div>
+
+      <div class="form-group">
+        <label class="form-label">ESTADO</label>
+        <div class="cm-estado-btns" id="cm-estado-btns"></div>
+      </div>
+
+      <div id="cm-body"></div>
+
+      <div class="modal-btns">
+        <button class="mbtn mbtn-cancel" onclick="closeModal('modal-corr-materia')">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- CALENDARIO ACADÉMICO -->
   <section id="sec-cal" class="section">
@@ -1317,7 +1386,7 @@ function actualizarInfoBackup() {
   const el = document.getElementById('backup-info');
   if (!el) return;
   const ps     = getPlanState();
-  const aprobadas = Object.values(ps).filter(Boolean).length;
+  const aprobadas = Object.values(ps).filter(v => v === 'aprobada').length;
   const ultima = localStorage.getItem('ing1-lastSave');
   el.innerHTML = `
     ${state.materias.length} materias · ${state.tareas.length} tareas · ${state.examenes.length} exámenes<br>
@@ -1327,32 +1396,8 @@ function actualizarInfoBackup() {
 }
 
 // Muestra qué falta para desbloquear una materia bloqueada
-function mostrarBloqueada(id) {
-  const ps = getPlanState();
-  const mat = PLAN.flatMap(b=>b.materias).find(m=>m.id===id);
-  if (!mat) return;
-
-  const faltanCorr = mat.corr
-    .filter(c => !ps[c])
-    .map(c => PLAN.flatMap(b=>b.materias).find(m=>m.id===c)?.nombre || c);
-
-  // Chequear regla de bloque
-  let anioM=null, semM=null;
-  PLAN.forEach(b => { if(b.materias.some(m=>m.id===id)){ anioM=b.anio; semM=b.semestre; } });
-  const regla = REGLA_BLOQUE.find(r=>r.anio===anioM && r.sem===semM);
-  const faltanBloque = regla && !bloqueAprobado(regla.reqAnio, regla.reqSem, ps)
-    ? getIdsBloque(regla.reqAnio, regla.reqSem)
-        .filter(bid => !ps[bid])
-        .map(bid => PLAN.flatMap(b=>b.materias).find(m=>m.id===bid)?.nombre || bid)
-    : [];
-
-  const partes = [];
-  if (faltanCorr.length)  partes.push(`Correlativas: ${faltanCorr.join(', ')}`);
-  if (faltanBloque.length) partes.push(`Regularización: ${faltanBloque.join(', ')}`);
-
-  if (partes.length) showToast(`🔒 Falta: ${partes[0].substring(0,60)}${partes[0].length>60?'…':''}`, 3500);
-  else showToast('🔒 Esta materia está bloqueada');
-} // cambiar para forzar reset de datos
+// (la función mostrarBloqueada fue reemplazada por el modal de detalle abrirCorrMateria)
+// cambiar para forzar reset de datos
 function saveState() {
   try {
     localStorage.setItem('ing1-state', JSON.stringify(state));
@@ -1926,93 +1971,117 @@ function rAvance(){
 }
 
 // ── CORRELATIVIDADES ──
-// ── PLAN DE ESTUDIOS - MECATRÓNICA ──
+// ── PLAN DE ESTUDIOS - MECATRÓNICA (Régimen de Correlatividades, Resol. CD N° 406/2023) ──
+// Cada materia tiene 3 tipos de correlativas, tal como las define el Anexo I:
+//   fuertes  → deben estar APROBADAS para poder cursar esta materia
+//   debiles  → deben estar CURSADAS/REGULARIZADAS (o aprobadas) para poder cursar esta materia
+//   final    → deben estar APROBADAS para poder rendir el examen final / promocionar esta materia
+// semGlobal = número de semestre correlativo dentro de toda la carrera (1 a 11),
+// usado para la regla de bloque del Artículo 3° de la resolución.
 const PLAN = [
   // ── 1° AÑO ──────────────────────────────────────────
-  { anio:1, semestre:1, materias:[
-    { id:'MCT-101', nombre:'Álgebra',                        corr:[] },
-    { id:'MCT-102', nombre:'Análisis Matemático I',          corr:[] },
-    { id:'MCT-103', nombre:'Geometría Analítica',            corr:[] },
-    { id:'MCT-104', nombre:'Introducción a la Ingeniería',   corr:[] },
+  { anio:1, semestre:1, semGlobal:1, materias:[
+    { id:'MCT-101', nombre:'Álgebra',                        fuertes:[], debiles:[], final:[] },
+    { id:'MCT-102', nombre:'Análisis Matemático I',          fuertes:[], debiles:[], final:[] },
+    { id:'MCT-103', nombre:'Geometría Analítica',            fuertes:[], debiles:[], final:[] },
+    { id:'MCT-104', nombre:'Introducción a la Ingeniería',   fuertes:[], debiles:[], final:[] },
   ]},
-  { anio:1, semestre:2, materias:[
-    { id:'MCT-105', nombre:'Análisis Matemático II',                corr:['MCT-102'] },
-    { id:'MCT-106', nombre:'Física I',                              corr:['MCT-102'] },
-    { id:'MCT-107', nombre:'Inglés I',                              corr:[] },
-    { id:'MCT-108', nombre:'Sistemas de Representación Gráfica',    corr:[] },
-    { id:'MCT-109', nombre:'Taller Inicial de Mecatrónica',         corr:[] },
+  { anio:1, semestre:2, semGlobal:2, materias:[
+    { id:'MCT-105', nombre:'Análisis Matemático II',                fuertes:[], debiles:['MCT-103','MCT-102'], final:['MCT-102'] },
+    { id:'MCT-106', nombre:'Física I',                              fuertes:[], debiles:['MCT-102'], final:[] },
+    { id:'MCT-107', nombre:'Inglés I',                              fuertes:[], debiles:[], final:[] },
+    { id:'MCT-108', nombre:'Sistemas de Representación Gráfica',    fuertes:[], debiles:['MCT-103'], final:[] },
+    { id:'MCT-109', nombre:'Taller Inicial de Mecatrónica',         fuertes:[], debiles:[], final:[] },
   ]},
   // ── 2° AÑO ──────────────────────────────────────────
-  { anio:2, semestre:1, materias:[
-    { id:'MCT-201', nombre:'Física II',                              corr:['MCT-106'] },
-    { id:'MCT-202', nombre:'Fundamentos Ambientales en Ingeniería',  corr:[] },
-    { id:'MCT-203', nombre:'Métodos Numéricos y Programación',       corr:['MCT-105'] },
-    { id:'MCT-204', nombre:'Inglés II',                              corr:['MCT-107'] },
-    { id:'MCT-205', nombre:'Química General e Inorgánica',           corr:[] },
+  { anio:2, semestre:1, semGlobal:3, materias:[
+    { id:'MCT-201', nombre:'Física II',                              fuertes:['MCT-102'], debiles:['MCT-106'], final:[] },
+    { id:'MCT-202', nombre:'Fundamentos Ambientales en Ingeniería',  fuertes:[], debiles:['MCT-104'], final:[] },
+    { id:'MCT-203', nombre:'Métodos Numéricos y Programación',       fuertes:['MCT-102','MCT-103'], debiles:['MCT-105','MCT-106'], final:[] },
+    { id:'MCT-204', nombre:'Inglés II',                              fuertes:[], debiles:['MCT-107'], final:['MCT-107'] },
+    { id:'MCT-205', nombre:'Química General e Inorgánica',           fuertes:[], debiles:['MCT-102'], final:[] },
   ]},
-  { anio:2, semestre:2, materias:[
-    { id:'MCT-206', nombre:'Electrotecnia y Máquinas Eléctricas',    corr:['MCT-201'] },
-    { id:'MCT-207', nombre:'Informática y Programación',             corr:[] },
-    { id:'MCT-208', nombre:'Inglés III',                             corr:['MCT-204'] },
-    { id:'MCT-209', nombre:'Matemáticas Avanzadas',                  corr:['MCT-105'] },
-    { id:'MCT-210', nombre:'Probabilidad y Estadística',             corr:['MCT-105'] },
+  { anio:2, semestre:2, semGlobal:4, materias:[
+    { id:'MCT-206', nombre:'Electrotecnia y Máquinas Eléctricas',    fuertes:[], debiles:['MCT-105','MCT-201'], final:[] },
+    { id:'MCT-207', nombre:'Informática y Programación',             fuertes:['MCT-109'], debiles:['MCT-203'], final:[] },
+    { id:'MCT-208', nombre:'Inglés III',                             fuertes:['MCT-107'], debiles:['MCT-204'], final:['MCT-204'] },
+    { id:'MCT-209', nombre:'Matemáticas Avanzadas',                  fuertes:[], debiles:['MCT-105','MCT-203','MCT-201'], final:[] },
+    { id:'MCT-210', nombre:'Probabilidad y Estadística',             fuertes:['MCT-101','MCT-102'], debiles:['MCT-105'], final:[] },
   ]},
   // ── 3° AÑO ──────────────────────────────────────────
-  { anio:3, semestre:1, materias:[
-    { id:'MCT-301', nombre:'Ciencia y Tecnología de Materiales',     corr:[] },
-    { id:'MCT-302', nombre:'Estática y Resistencia de Materiales',   corr:['MCT-201'] },
-    { id:'MCT-303', nombre:'Inglés IV',                              corr:['MCT-208'] },
-    { id:'MCT-304', nombre:'Sistemas de Automatización',             corr:['MCT-206'] },
-    { id:'MCT-305', nombre:'Metrología y Normalización',             corr:[] },
+  { anio:3, semestre:1, semGlobal:5, materias:[
+    { id:'MCT-301', nombre:'Ciencia y Tecnología de Materiales',     fuertes:['MCT-106','MCT-205'], debiles:['MCT-201'], final:[] },
+    { id:'MCT-302', nombre:'Estática y Resistencia de Materiales',   fuertes:['MCT-108','MCT-106'], debiles:['MCT-105'], final:[] },
+    { id:'MCT-303', nombre:'Inglés IV',                              fuertes:['MCT-204'], debiles:['MCT-208'], final:['MCT-208'] },
+    { id:'MCT-304', nombre:'Sistemas de Automatización',             fuertes:['MCT-201'], debiles:['MCT-206','MCT-209'], final:[] },
+    { id:'MCT-305', nombre:'Metrología y Normalización',             fuertes:['MCT-108','MCT-106'], debiles:['MCT-210'], final:[] },
   ]},
-  { anio:3, semestre:2, materias:[
-    { id:'MCT-306', nombre:'Electrónica General y Aplicada',         corr:['MCT-206'] },
-    { id:'MCT-307', nombre:'Elementos de Máquinas',                  corr:['MCT-302'] },
-    { id:'MCT-308', nombre:'Materiales',                             corr:[] },
-    { id:'MCT-309', nombre:'Mecánica de los Fluidos y Máq. Hidráulicas', corr:['MCT-201'] },
-    { id:'MCT-310', nombre:'Mecánica Racional',                      corr:['MCT-209'] },
+  { anio:3, semestre:2, semGlobal:6, materias:[
+    { id:'MCT-306', nombre:'Electrónica General y Aplicada',         fuertes:['MCT-201'], debiles:['MCT-206'], final:[] },
+    { id:'MCT-307', nombre:'Elementos de Máquinas',                  fuertes:['MCT-108'], debiles:['MCT-301','MCT-302'], final:[] },
+    { id:'MCT-308', nombre:'Materiales',                             fuertes:['MCT-203'], debiles:['MCT-301','MCT-302'], final:[] },
+    { id:'MCT-309', nombre:'Mecánica de los Fluidos y Máq. Hidráulicas', fuertes:['MCT-105','MCT-106'], debiles:['MCT-201'], final:[] },
+    { id:'MCT-310', nombre:'Mecánica Racional',                      fuertes:['MCT-105'], debiles:['MCT-302'], final:[] },
   ]},
   // ── 4° AÑO ──────────────────────────────────────────
-  { anio:4, semestre:1, materias:[
-    { id:'MCT-401', nombre:'Concepción y Fab. Asistida por PC',      corr:[] },
-    { id:'MCT-402', nombre:'Economía y Evaluación de Proyecto',      corr:[] },
-    { id:'MCT-403', nombre:'Mecánica Estructural',                   corr:['MCT-310'] },
-    { id:'MCT-404', nombre:'Microcontroladores y Electrónica de Potencia', corr:['MCT-306'] },
-    { id:'MCT-405', nombre:'Tecnología Industrial',                  corr:[] },
+  { anio:4, semestre:1, semGlobal:7, materias:[
+    { id:'MCT-401', nombre:'Concepción y Fab. Asistida por PC',      fuertes:['MCT-305'], debiles:['MCT-310','MCT-307'], final:[] },
+    { id:'MCT-402', nombre:'Economía y Evaluación de Proyecto',      fuertes:['MCT-210'], debiles:[], final:[] },
+    { id:'MCT-403', nombre:'Mecánica Estructural',                   fuertes:['MCT-209'], debiles:['MCT-310','MCT-307'], final:[] },
+    { id:'MCT-404', nombre:'Microcontroladores y Electrónica de Potencia', fuertes:['MCT-207'], debiles:['MCT-304','MCT-306'], final:['MCT-306'] },
+    { id:'MCT-405', nombre:'Tecnología Industrial',                  fuertes:['MCT-305'], debiles:['MCT-307'], final:[] },
   ]},
-  { anio:4, semestre:2, materias:[
-    { id:'MCT-406', nombre:'Automática y Máquinas Eléctricas',       corr:['MCT-502'] },
-    { id:'MCT-407', nombre:'Inteligencia Artificial I',              corr:['MCT-409'] },
-    { id:'MCT-408', nombre:'Legislación y Ética Profesional',        corr:[] },
-    { id:'MCT-409', nombre:'Programación Avanzada',                  corr:['MCT-207'] },
-    { id:'MCT-410', nombre:'Robótica I',                             corr:['MCT-502'] },
+  { anio:4, semestre:2, semGlobal:8, materias:[
+    { id:'MCT-406', nombre:'Automática y Máquinas Eléctricas',       fuertes:['MCT-206','MCT-304'], debiles:['MCT-403'], final:[] },
+    { id:'MCT-407', nombre:'Inteligencia Artificial I',              fuertes:['MCT-207','MCT-210','MCT-208'], debiles:[], final:[] },
+    { id:'MCT-408', nombre:'Legislación y Ética Profesional',        fuertes:['MCT-104'], debiles:[], final:[] },
+    { id:'MCT-409', nombre:'Programación Avanzada',                  fuertes:['MCT-207'], debiles:['MCT-404'], final:[] },
+    { id:'MCT-410', nombre:'Robótica I',                             fuertes:['MCT-207','MCT-310'], debiles:['MCT-304','MCT-404','MCT-307'], final:[] },
   ]},
   // ── 5° AÑO ──────────────────────────────────────────
-  { anio:5, semestre:1, materias:[
-    { id:'MCT-501', nombre:'Automatismos Industriales',              corr:[] },
-    { id:'MCT-502', nombre:'Control y Sistemas',                     corr:['MCT-304'] },
-    { id:'MCT-503', nombre:'Gestión Ambiental en Mecatrónica',       corr:[] },
-    { id:'MCT-504', nombre:'Inglés V',                               corr:['MCT-303'] },
-    { id:'MCT-505', nombre:'Inteligencia Artificial II',             corr:['MCT-407'] },
+  { anio:5, semestre:1, semGlobal:9, materias:[
+    { id:'MCT-501', nombre:'Automatismos Industriales',              fuertes:['MCT-304'], debiles:['MCT-404'], final:[] },
+    { id:'MCT-502', nombre:'Control y Sistemas',                     fuertes:['MCT-304','MCT-403'], debiles:['MCT-410','MCT-406'], final:[] },
+    { id:'MCT-503', nombre:'Gestión Ambiental en Mecatrónica',       fuertes:['MCT-202'], debiles:[], final:[] },
+    { id:'MCT-504', nombre:'Inglés V',                               fuertes:['MCT-208'], debiles:['MCT-303'], final:['MCT-303'] },
+    { id:'MCT-505', nombre:'Inteligencia Artificial II',             fuertes:[], debiles:['MCT-409','MCT-407'], final:[] },
   ]},
-  { anio:5, semestre:2, materias:[
-    { id:'MCT-506', nombre:'Autómatas y Control Discreto',           corr:['MCT-502'] },
-    { id:'MCT-507', nombre:'Higiene y Seguridad',                    corr:[] },
-    { id:'MCT-508', nombre:'Realidad Virtual',                       corr:[] },
-    { id:'MCT-509', nombre:'Robótica II',                            corr:['MCT-410'] },
-    { id:'MCT-510', nombre:'Sistemas Neumáticos e Hidráulicos',      corr:[] },
-    { id:'MCT-511', nombre:'Práctica Profesional Supervisada',       corr:[] },
-    { id:'MCT-512', nombre:'Proyecto Final de Estudios',             corr:['MCT-511'] },
+  { anio:5, semestre:2, semGlobal:10, materias:[
+    { id:'MCT-506', nombre:'Autómatas y Control Discreto',           fuertes:['MCT-406'], debiles:['MCT-501','MCT-502'], final:[] },
+    { id:'MCT-507', nombre:'Higiene y Seguridad',                    fuertes:['MCT-405'], debiles:[], final:[] },
+    { id:'MCT-508', nombre:'Realidad Virtual',                       fuertes:[], debiles:['MCT-404','MCT-401','MCT-409'], final:[] },
+    { id:'MCT-509', nombre:'Robótica II',                            fuertes:['MCT-403','MCT-410'], debiles:['MCT-502','MCT-401','MCT-404'], final:[] },
+    { id:'MCT-510', nombre:'Sistemas Neumáticos e Hidráulicos',      fuertes:['MCT-310','MCT-307','MCT-309'], debiles:['MCT-501'], final:[] },
+  ]},
+  // ── 6° AÑO ──────────────────────────────────────────
+  { anio:6, semestre:1, semGlobal:11, materias:[
+    { id:'MCT-511', nombre:'Práctica Profesional Supervisada',       fuertes:['MCT-405','MCT-409','MCT-407','MCT-410','MCT-406','MCT-408'], debiles:[], final:[] },
+    { id:'MCT-512', nombre:'Proyecto Final de Estudios',             fuertes:['MCT-401','MCT-409','MCT-502','MCT-501'], debiles:[], final:['MCT-402','MCT-505','MCT-508','MCT-509','MCT-510','MCT-503','MCT-506'] },
   ]},
 ];
 
-// Estado de aprobación: { [id]: true/false }
+// Índice plano de todas las materias del plan (por id), para lookups rápidos
+const PLAN_FLAT = PLAN.flatMap(b => b.materias.map(m => ({ ...m, anio:b.anio, semestre:b.semestre, semGlobal:b.semGlobal })));
+function getPlanMateria(id) { return PLAN_FLAT.find(m => m.id === id); }
+
+// Estado de cada materia del plan: { [id]: 'aprobada' | 'regular' | undefined(=libre) }
+// (compatibilidad: si el valor guardado es `true` de una versión anterior, se interpreta como 'aprobada')
 function getPlanState() {
-  try { return JSON.parse(localStorage.getItem('ing1-plan') || '{}'); } catch(e){ return {}; }
+  try {
+    const raw = JSON.parse(localStorage.getItem('ing1-plan') || '{}');
+    const out = {};
+    Object.keys(raw).forEach(id => {
+      const v = raw[id];
+      if (v === true || v === 'aprobada') out[id] = 'aprobada';
+      else if (v === 'regular') out[id] = 'regular';
+    });
+    return out;
+  } catch(e){ return {}; }
 }
 function savePlanState(ps) {
   try { localStorage.setItem('ing1-plan', JSON.stringify(ps)); } catch(e){}
 }
+function getEstadoCorr(ps, id) { return ps[id] || 'libre'; }
 
 // ── CRÉDITOS POR MATERIA ──
 const CREDITOS = {
@@ -2029,55 +2098,76 @@ const CREDITOS = {
   'MCT-511':6, 'MCT-512':10,
 };
 
-// ── REGLA DE REGULARIZACIÓN POR BLOQUE ──
-// Para cursar el 1er semestre de año N (N≥3) hay que tener aprobado
-// todo el 2do semestre del año (N-2).
-// Para cursar el 2do semestre de año N (N≥3) hay que tener aprobado
-// todo el 1er semestre del año (N-1).
-// Mapeamos: [anio_destino, sem_destino] → [anio_req, sem_req]
-const REGLA_BLOQUE = [
-  // destino            requiere aprobar todo este bloque
-  { anio:3, sem:1,  reqAnio:1, reqSem:2 },
-  { anio:3, sem:2,  reqAnio:2, reqSem:1 },
-  { anio:4, sem:1,  reqAnio:2, reqSem:2 },
-  { anio:4, sem:2,  reqAnio:3, reqSem:1 },
-  { anio:5, sem:1,  reqAnio:3, reqSem:2 },
-  { anio:5, sem:2,  reqAnio:4, reqSem:1 },
-];
+// ── REGLA DE BLOQUE (Artículo 3°, Resol. CD 406/2023) ──
+// Para cursar espacios curriculares del semestre i-ésimo (i=5 a 11), se requiere
+// tener aprobados TODOS los espacios curriculares del semestre (i-4).
+// Excepción explícita de la resolución: Inglés V (semestre 9) no está sujeta a esta regla.
+const REGLA_BLOQUE = [5,6,7,8,9,10,11].map(sg => ({
+  semGlobal: sg,
+  requiere: sg - 4,
+  excepciones: sg === 9 ? ['MCT-504'] : [],
+}));
 
-// Devuelve los IDs de todas las materias de un bloque anio+semestre
-function getIdsBloque(anio, sem) {
-  const bloque = PLAN.find(b => b.anio === anio && b.semestre === sem);
+// Devuelve los IDs de todas las materias de un semestre global (1-11)
+function getIdsBloque(semGlobal) {
+  const bloque = PLAN.find(b => b.semGlobal === semGlobal);
   return bloque ? bloque.materias.map(m => m.id) : [];
 }
 
-// Verifica si un bloque completo está aprobado
-function bloqueAprobado(anio, sem, ps) {
-  return getIdsBloque(anio, sem).every(id => !!ps[id]);
+// Verifica si un bloque completo (semestre global) está aprobado
+function bloqueAprobado(semGlobal, ps) {
+  return getIdsBloque(semGlobal).every(id => getEstadoCorr(ps, id) === 'aprobada');
 }
 
-// Verifica si una materia (con su anio+sem) cumple TODAS las condiciones:
-// 1. Sus correlativas individuales están aprobadas
-// 2. El bloque de regularización requerido está aprobado (si aplica)
+// ¿Puede cursarse esta materia? → correlativas fuertes aprobadas +
+// correlativas débiles regularizadas (o aprobadas) + regla de bloque cumplida
 function puedesCursar(materia, ps) {
-  // Condición 1: correlativas propias
-  if (!materia.corr.every(c => !!ps[c])) return false;
+  if (!materia.fuertes.every(id => getEstadoCorr(ps, id) === 'aprobada')) return false;
+  if (!materia.debiles.every(id => ['aprobada','regular'].includes(getEstadoCorr(ps, id)))) return false;
 
-  // Condición 2: regla de bloque
-  // Encontrar en qué año/sem está esta materia
-  let anioM = null, semM = null;
-  PLAN.forEach(b => {
-    if (b.materias.some(m => m.id === materia.id)) {
-      anioM = b.anio; semM = b.semestre;
-    }
-  });
-  const regla = REGLA_BLOQUE.find(r => r.anio === anioM && r.sem === semM);
-  if (regla && !bloqueAprobado(regla.reqAnio, regla.reqSem, ps)) return false;
-
+  const regla = REGLA_BLOQUE.find(r => r.semGlobal === materia.semGlobal);
+  if (regla && !regla.excepciones.includes(materia.id)) {
+    if (!bloqueAprobado(regla.requiere, ps)) return false;
+  }
   return true;
 }
 
-function estaAprobada(id) { return !!getPlanState()[id]; }
+// ¿Puede rendirse el final / promocionar esta materia? → correlativas "final" aprobadas
+function puedeRendirFinal(materia, ps) {
+  return materia.final.every(id => getEstadoCorr(ps, id) === 'aprobada');
+}
+
+// Materias que dependen de esta (la tienen como fuerte, débil o final)
+function materiasQueDependen(id) {
+  return PLAN_FLAT.filter(m => m.fuertes.includes(id) || m.debiles.includes(id) || m.final.includes(id));
+}
+
+// Re-valida todo el plan tras un cambio de estado: si alguna materia queda en un
+// estado que ya no cumple sus propios requisitos, la baja automáticamente
+// (aprobada→regular si aún puede cursarse pero no rendirse; o →libre si ya ni eso).
+function revalidarPlan(ps) {
+  let cambios = [];
+  for (let pasada = 0; pasada < 15; pasada++) {
+    let huboCambio = false;
+    PLAN_FLAT.forEach(m => {
+      const est = getEstadoCorr(ps, m.id);
+      if (est === 'libre') return;
+      const puedeCursar = puedesCursar(m, ps);
+      if (est === 'aprobada' && !(puedeCursar && puedeRendirFinal(m, ps))) {
+        ps[m.id] = puedeCursar ? 'regular' : undefined;
+        if (!puedeCursar) delete ps[m.id];
+        cambios.push(m.nombre); huboCambio = true;
+      } else if (est === 'regular' && !puedeCursar) {
+        delete ps[m.id];
+        cambios.push(m.nombre); huboCambio = true;
+      }
+    });
+    if (!huboCambio) break;
+  }
+  return cambios;
+}
+
+function estaAprobada(id) { return getPlanState()[id] === 'aprobada'; }
 
 // ── CORRELATIVIDADES JS ──
 let filtroCorr = 'todas';
@@ -2088,30 +2178,47 @@ function filtrarCorr(f, el) {
   rCorr();
 }
 
-function toggleAprobada(id) {
+// Cambia el estado de una materia en Correlatividades, validando los requisitos.
+// estado: 'libre' | 'regular' | 'aprobada'
+function setEstadoCorr(id, estado) {
   const ps = getPlanState();
-  const mat = PLAN.flatMap(b=>b.materias).find(m=>m.id===id);
-  const nombre = mat ? mat.nombre : id;
-  ps[id] = !ps[id];
-  if (!ps[id]) {
-    // Cascada correlativas directas
-    PLAN.forEach(bloque => bloque.materias.forEach(m => {
-      if (m.corr.includes(id)) ps[m.id] = false;
-    }));
-    // Cascada por bloque de regularización
-    REGLA_BLOQUE.forEach(r => {
-      const idsBloque = getIdsBloque(r.reqAnio, r.reqSem);
-      if (idsBloque.includes(id)) {
-        getIdsBloque(r.anio, r.sem).forEach(did => { ps[did] = false; });
-      }
-    });
-    showToast(`↩️ ${nombre.split(' ')[0]} marcada como pendiente`);
-  } else {
-    showToast(`⭐ ${nombre.split(' ')[0]} aprobada`);
+  const mat = getPlanMateria(id);
+  if (!mat) return;
+  const nombreCorto = mat.nombre.split(' ')[0];
+
+  if (estado === 'libre') {
+    delete ps[id];
+    const cambios = revalidarPlan(ps);
+    savePlanState(ps);
+    showToast(cambios.length ? `↩️ ${nombreCorto} y ${cambios.length} más recalculadas` : `↩️ ${nombreCorto} marcada como libre`);
+  } else if (estado === 'regular') {
+    if (!puedesCursar(mat, ps)) {
+      showToast(`⚠️ Faltan correlativas para cursar ${nombreCorto}`);
+      return;
+    }
+    ps[id] = 'regular';
+    savePlanState(ps);
+    showToast(`📘 ${nombreCorto} marcada como regular`);
+  } else if (estado === 'aprobada') {
+    if (!puedesCursar(mat, ps)) {
+      showToast(`⚠️ Faltan correlativas para cursar ${nombreCorto}`);
+      return;
+    }
+    if (!puedeRendirFinal(mat, ps)) {
+      showToast(`⚠️ Faltan correlativas para rendir el final de ${nombreCorto}`);
+      return;
+    }
+    ps[id] = 'aprobada';
+    savePlanState(ps);
+    showToast(`⭐ ${nombreCorto} aprobada`);
   }
-  savePlanState(ps);
+
   rCorr();
   actualizarAlertas();
+  // Si el modal de detalle está abierto en esta materia, refrescar su contenido
+  if (document.getElementById('modal-corr-materia').classList.contains('open') && corrMateriaAbierta === id) {
+    abrirCorrMateria(id);
+  }
 }
 
 function rCorr() {
@@ -2126,19 +2233,20 @@ function rCorr() {
   });
 
   const matchFiltro = (m) => {
-    const aprobada  = !!ps[m.id];
-    const disponible = !aprobada && puedesCursar(m, ps);
-    if (filtroCorr === 'aprobadas')   return aprobada;
+    const est = getEstadoCorr(ps, m.id);
+    const disponible = est === 'libre' && puedesCursar(m, ps);
+    if (filtroCorr === 'aprobadas')   return est === 'aprobada';
+    if (filtroCorr === 'regulares')   return est === 'regular';
     if (filtroCorr === 'disponibles') return disponible;
-    if (filtroCorr === 'bloqueadas')  return !aprobada && !disponible;
+    if (filtroCorr === 'bloqueadas')  return est === 'libre' && !disponible;
     return true;
   };
 
   // Calcular totales para el header
   const totalMats = PLAN.flatMap(b=>b.materias).length;
-  const aprobadas = PLAN.flatMap(b=>b.materias).filter(m=>!!ps[m.id]).length;
+  const aprobadas = PLAN.flatMap(b=>b.materias).filter(m=>getEstadoCorr(ps,m.id)==='aprobada').length;
   const credTotal = PLAN.flatMap(b=>b.materias).reduce((a,m)=>a+(CREDITOS[m.id]||0),0);
-  const credAprob = PLAN.flatMap(b=>b.materias).filter(m=>!!ps[m.id]).reduce((a,m)=>a+(CREDITOS[m.id]||0),0);
+  const credAprob = PLAN.flatMap(b=>b.materias).filter(m=>getEstadoCorr(ps,m.id)==='aprobada').reduce((a,m)=>a+(CREDITOS[m.id]||0),0);
   const pct = Math.round((aprobadas/totalMats)*100);
 
   let html = `
@@ -2160,21 +2268,26 @@ function rCorr() {
       if (!matsFiltradas.length) return;
 
       // Verificar si hay regla de bloque para este semestre
-      const regla = REGLA_BLOQUE.find(r => r.anio === bloque.anio && r.sem === bloque.semestre);
+      const regla = REGLA_BLOQUE.find(r => r.semGlobal === bloque.semGlobal);
       let alertaBloque = '';
       if (regla) {
-        const bloqOk = bloqueAprobado(regla.reqAnio, regla.reqSem, ps);
-        const faltanBloque = getIdsBloque(regla.reqAnio, regla.reqSem)
-          .filter(id => !ps[id])
-          .map(id => PLAN.flatMap(b=>b.materias).find(m=>m.id===id)?.nombre || id);
+        const bloqOk = bloqueAprobado(regla.requiere, ps);
+        const faltanBloque = getIdsBloque(regla.requiere)
+          .filter(id => getEstadoCorr(ps,id) !== 'aprobada')
+          .map(id => getPlanMateria(id)?.nombre || id);
+        const bloqueReqLbl = PLAN.find(b=>b.semGlobal===regla.requiere);
+        const reqTxt = bloqueReqLbl ? `${bloqueReqLbl.semestre}° sem. de ${bloqueReqLbl.anio}° año` : `semestre ${regla.requiere}`;
+        const excepTxt = regla.excepciones.length
+          ? ` (no aplica para ${regla.excepciones.map(id=>getPlanMateria(id)?.nombre||id).join(', ')})`
+          : '';
         if (!bloqOk) {
           alertaBloque = `<div style="font-size:10px;color:var(--accent3);background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:8px;padding:7px 10px;margin-bottom:8px;line-height:1.5;">
-            ⚠️ <b>Regularización:</b> Necesitás aprobar todo el ${regla.reqSem}° sem. de ${regla.reqAnio}° año.<br>
+            ⚠️ <b>Regularización:</b> Necesitás aprobar todo el ${reqTxt}${excepTxt}.<br>
             <span style="opacity:0.8;">Faltan: ${faltanBloque.slice(0,3).join(', ')}${faltanBloque.length>3?' y '+(faltanBloque.length-3)+' más':''}</span>
           </div>`;
         } else {
           alertaBloque = `<div style="font-size:10px;color:var(--success);background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);border-radius:8px;padding:6px 10px;margin-bottom:8px;">
-            ✅ Regularización cumplida (${regla.reqSem}° sem. ${regla.reqAnio}° año)
+            ✅ Regularización cumplida (${reqTxt})
           </div>`;
         }
       }
@@ -2184,30 +2297,31 @@ function rCorr() {
         ${alertaBloque}`;
 
       matsFiltradas.forEach(m => {
-        const aprobada  = !!ps[m.id];
-        const disponible = !aprobada && puedesCursar(m, ps);
-        const bloqueada  = !aprobada && !disponible;
-        const cls       = aprobada ? 'pm-aprobada' : disponible ? 'pm-disponible' : 'pm-bloqueada';
-        const estadoLbl = aprobada ? 'APROBADA' : disponible ? 'DISPONIBLE' : 'BLOQUEADA';
-        const estadoCls = aprobada ? 'pme-aprobada' : disponible ? 'pme-disponible' : 'pme-bloqueada';
-        const cred      = CREDITOS[m.id] || '—';
+        const est        = getEstadoCorr(ps, m.id);
+        const disponible = est === 'libre' && puedesCursar(m, ps);
+        const bloqueada  = est === 'libre' && !disponible;
+        const cls        = est==='aprobada' ? 'pm-aprobada' : est==='regular' ? 'pm-regular' : disponible ? 'pm-disponible' : 'pm-bloqueada';
+        const estadoLbl  = est==='aprobada' ? 'APROBADA' : est==='regular' ? 'REGULAR' : disponible ? 'DISPONIBLE' : 'BLOQUEADA';
+        const estadoCls  = est==='aprobada' ? 'pme-aprobada' : est==='regular' ? 'pme-regular' : disponible ? 'pme-disponible' : 'pme-bloqueada';
+        const cred       = CREDITOS[m.id] || '—';
+        const checkIco   = est==='aprobada' ? '✓' : est==='regular' ? '●' : '';
 
-        // Tags de correlativas individuales
+        // Tags de correlativas: fuertes (línea llena) y débiles (línea punteada)
         let corrTags = '';
-        if (m.corr.length > 0) {
-          corrTags = '<div class="pm-corr-tags">' + m.corr.map(c => {
-            const ok  = !!ps[c];
-            const mat = PLAN.flatMap(b=>b.materias).find(x=>x.id===c);
-            const nombre = mat ? mat.nombre.split(' ')[0] : c;
-            return `<span class="pm-corr-tag ${ok?'ok':'falta'}">${ok?'✓ ':''}${nombre}</span>`;
+        const tagsHtml = [
+          ...m.fuertes.map(c => ({c, debil:false})),
+          ...m.debiles.map(c => ({c, debil:true})),
+        ];
+        if (tagsHtml.length > 0) {
+          corrTags = '<div class="pm-corr-tags">' + tagsHtml.map(({c,debil}) => {
+            const ok  = ['aprobada', ...(debil?['regular']:[])].includes(getEstadoCorr(ps,c));
+            const nombre = getPlanMateria(c)?.nombre.split(' ')[0] || c;
+            return `<span class="pm-corr-tag ${debil?'debil':''} ${ok?'ok':'falta'}">${ok?'✓ ':''}${nombre}</span>`;
           }).join('') + '</div>';
         }
 
-        const onclickAttr = bloqueada
-          ? `onclick="mostrarBloqueada('${m.id}')"`
-          : `onclick="toggleAprobada('${m.id}')"`;
-        contenido += `<div class="plan-materia ${cls}" ${onclickAttr}>
-          <div class="pm-check">${aprobada?'✓':''}</div>
+        contenido += `<div class="plan-materia ${cls}" onclick="abrirCorrMateria('${m.id}')">
+          <div class="pm-check">${checkIco}</div>
           <div class="pm-info">
             <div class="pm-nombre">${m.nombre}</div>
             <div class="pm-codigo">${m.id} · ${cred} créditos</div>
@@ -2223,7 +2337,7 @@ function rCorr() {
     });
 
     if(!contenido) return;
-    const aprobadasAnio = PLAN.filter(b=>b.anio==anio).flatMap(b=>b.materias).filter(m=>!!ps[m.id]).length;
+    const aprobadasAnio = PLAN.filter(b=>b.anio==anio).flatMap(b=>b.materias).filter(m=>getEstadoCorr(ps,m.id)==='aprobada').length;
     const totalAnio     = PLAN.filter(b=>b.anio==anio).flatMap(b=>b.materias).length;
     html += `<div class="plan-anio">
       <div class="plan-anio-header">
@@ -2237,6 +2351,94 @@ function rCorr() {
 
   if(!html) html = `<div class="empty-state"><span class="icon">🎓</span>No hay materias en esta categoría.</div>`;
   lista.innerHTML = html;
+}
+
+// ── DETALLE DE MATERIA (Correlatividades) ──
+let corrMateriaAbierta = null;
+
+function abrirCorrMateria(id) {
+  const mat = getPlanMateria(id);
+  if (!mat) return;
+  const ps = getPlanState();
+  const est = getEstadoCorr(ps, id);
+  corrMateriaAbierta = id;
+
+  document.getElementById('cm-title').textContent = mat.nombre;
+  document.getElementById('cm-subtitle').textContent =
+    `${mat.id} · ${CREDITOS[id] || '—'} créditos · ${mat.anio}° año, ${mat.semestre}° semestre`;
+
+  // Botones de estado
+  const estados = [
+    {v:'libre',    lbl:'🆓 Libre'},
+    {v:'regular',  lbl:'📘 Regular'},
+    {v:'aprobada', lbl:'⭐ Aprobada'},
+  ];
+  document.getElementById('cm-estado-btns').innerHTML = estados.map(e =>
+    `<div class="cm-estado-btn ${e.v}${est===e.v?' on':''}" onclick="setEstadoCorr('${id}','${e.v}')">${e.lbl}</div>`
+  ).join('');
+
+  // Helper para renderizar una lista de correlativas (fuertes/débiles/final)
+  const renderLista = (ids, tipoOk) => {
+    if (!ids.length) return `<div class="cm-empty">No requiere.</div>`;
+    return ids.map(cid => {
+      const cm = getPlanMateria(cid);
+      const cEst = getEstadoCorr(ps, cid);
+      const ok = tipoOk === 'aprobada' ? cEst === 'aprobada' : ['aprobada','regular'].includes(cEst);
+      const badgeTxt = cEst === 'aprobada' ? 'APROBADA' : cEst === 'regular' ? 'REGULAR' : 'LIBRE';
+      const cls = ok ? 'ok' : (cEst==='regular' ? 'parcial' : 'falta');
+      return `<div class="cm-corr-item ${cls}" onclick="abrirCorrMateria('${cid}')">
+        <span style="flex:1;">${cm ? cm.nombre : cid}</span>
+        <span class="badge">${badgeTxt}</span>
+      </div>`;
+    }).join('');
+  };
+
+  // Materias posteriores (que dependen de esta)
+  const posteriores = materiasQueDependen(id);
+  const renderPosteriores = () => {
+    if (!posteriores.length) return `<div class="cm-empty">Ninguna materia depende de esta.</div>`;
+    return posteriores.map(pm => {
+      const tipo = pm.fuertes.includes(id) ? 'fuerte' : pm.debiles.includes(id) ? 'débil' : 'para rendir final';
+      return `<div class="cm-corr-item" onclick="abrirCorrMateria('${pm.id}')">
+        <span style="flex:1;">${pm.nombre}</span>
+        <span class="badge" style="background:var(--panel2);color:var(--muted);">${tipo}</span>
+      </div>`;
+    }).join('');
+  };
+
+  // Regla de bloque para esta materia (si aplica)
+  let bloqueHtml = '';
+  const regla = REGLA_BLOQUE.find(r => r.semGlobal === mat.semGlobal);
+  if (regla && !regla.excepciones.includes(mat.id)) {
+    const bloqOk = bloqueAprobado(regla.requiere, ps);
+    const bloqueReq = PLAN.find(b=>b.semGlobal===regla.requiere);
+    const reqTxt = bloqueReq ? `${bloqueReq.semestre}° sem. de ${bloqueReq.anio}° año` : `semestre ${regla.requiere}`;
+    if (!bloqOk) {
+      bloqueHtml = `<div class="cm-bloque-note">⚠️ Además, por regla de bloque, para cursar esta materia necesitás tener aprobado todo el <b>${reqTxt}</b>.</div>`;
+    }
+  }
+
+  document.getElementById('cm-body').innerHTML = `
+    <div class="cm-section">
+      <div class="cm-section-label">CORRELATIVAS FUERTES (deben estar aprobadas para cursar)</div>
+      ${renderLista(mat.fuertes, 'aprobada')}
+      ${bloqueHtml}
+    </div>
+    <div class="cm-section">
+      <div class="cm-section-label">CORRELATIVAS DÉBILES (deben estar regularizadas o aprobadas para cursar)</div>
+      ${renderLista(mat.debiles, 'regular')}
+    </div>
+    ${mat.final.length ? `<div class="cm-section">
+      <div class="cm-section-label">PARA RENDIR FINAL / PROMOCIONAR (deben estar aprobadas)</div>
+      ${renderLista(mat.final, 'aprobada')}
+    </div>` : ''}
+    <div class="cm-section">
+      <div class="cm-section-label">MATERIAS POSTERIORES (dependen de esta)</div>
+      ${renderPosteriores()}
+    </div>
+  `;
+
+  document.getElementById('modal-corr-materia').classList.add('open');
 }
 
 // ── MODALES ──
@@ -2267,7 +2469,7 @@ function openModal(id) {
   }
   document.getElementById(id).classList.add('open');
 }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; if(id==='modal-corr-materia') corrMateriaAbierta=null; }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
