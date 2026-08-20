@@ -672,6 +672,7 @@ body {
 .cd-mesa-o   { background: #ef4444; }
 .cd-mesa-e   { background: #22c55e; }
 .cd-feriado  { background: #f59e0b; }
+.cd-feriado-esp { background: #eab308; }
 .cd-puente   { background: #e879f9; }
 .cd-receso   { background: #475569; }
 .cd-inscr    { background: #06b6d4; }
@@ -701,12 +702,46 @@ body {
   border-radius: 16px;
   padding: 12px;
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
 }
+.cal-mes:active { transform: scale(0.98); }
+.cal-mes:hover { border-color: rgba(94,234,212,0.35); }
 .cal-mes-titulo {
   font-size: 12px; font-weight: 800;
   text-align: center; margin-bottom: 8px;
   color: var(--text); letter-spacing: 0.3px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
 }
+.cal-mes-titulo .tap-hint { font-size: 9px; color: var(--muted); font-weight: 500; }
+
+/* Modal detalle de mes */
+.cm-mes-section { margin-top: 14px; }
+.cm-mes-label {
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px;
+  color: var(--muted); margin-bottom: 7px; display:flex; align-items:center; gap:6px;
+}
+.cm-mes-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 11px; border-radius: 10px;
+  background: var(--panel2); border: 1px solid var(--border);
+  margin-bottom: 5px; font-size: 12px;
+}
+.cm-mes-item .cm-mes-fecha {
+  font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+  color: var(--muted); min-width: 40px; flex-shrink: 0;
+}
+.cm-mes-item .cm-mes-txt { flex: 1; min-width: 0; }
+.cm-mes-item .cm-mes-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.cm-mes-item.tipo-feriado  { border-left: 3px solid var(--danger); }
+.cm-mes-item.tipo-feriado-esp { border-left: 3px solid #eab308; }
+.cm-mes-item.tipo-puente   { border-left: 3px solid var(--accent6); }
+.cm-mes-item.tipo-mesa-o   { border-left: 3px solid var(--accent2); }
+.cm-mes-item.tipo-mesa-e   { border-left: 3px solid var(--accent5); }
+.cm-mes-item.tipo-inscr    { border-left: 3px solid var(--accent7); }
+.cm-mes-item.tipo-receso   { border-left: 3px solid var(--muted); }
+.cm-mes-item.tipo-examen   { border-left: 3px solid var(--accent3); }
+.cm-mes-item.tipo-tarea    { border-left: 3px solid var(--accent); }
 .cal-dias-header {
   display: grid; grid-template-columns: repeat(7, 1fr);
   margin-bottom: 2px;
@@ -732,6 +767,7 @@ body {
 .cal-dia.mesa-o   { background: rgba(239,68,68,0.2);  color: #fca5a5; }
 .cal-dia.mesa-e   { background: rgba(34,197,94,0.18); color: #86efac; }
 .cal-dia.feriado  { background: rgba(245,158,11,0.2); color: #fcd34d; }
+.cal-dia.feriado-esp { background: rgba(234,179,8,0.2); color: #fde047; }
 .cal-dia.puente   { background: rgba(232,121,249,0.18);color: #e879f9; }
 .cal-dia.receso   { background: rgba(71,85,105,0.35); color: #94a3b8; }
 .cal-dia.inscr    { background: rgba(6,182,212,0.18); color: #67e8f9; }
@@ -922,6 +958,18 @@ body {
   <section id="sec-cal" class="section">
     <div id="cal-content"></div>
   </section>
+
+  <!-- Detalle de mes (Calendario académico) -->
+  <div class="modal-overlay" id="modal-cal-mes">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="cmm-title">Mes</div>
+      <div id="cmm-body"></div>
+      <div class="modal-btns">
+        <button class="mbtn mbtn-cancel" onclick="closeModal('modal-cal-mes')">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -2688,50 +2736,68 @@ const CAL_RANGOS = [
 ];
 
 const CAL_DIAS_ESP = {
-  // Feriados nacionales 2026
-  '2026-04-02':'feriado','2026-04-03':'feriado','2026-04-05':'feriado',
-  '2026-04-04':'puente',
+  // Feriados nacionales 2026 (verificado contra Anexo III)
+  '2026-01-01':'feriado', // Año Nuevo
+  '2026-02-16':'feriado','2026-02-17':'feriado', // Carnaval
+  '2026-03-23':'puente',                          // puente previo al 24
+  '2026-03-24':'feriado',                         // Día de la Memoria
+  '2026-04-02':'feriado','2026-04-03':'feriado',  // Malvinas + Viernes Santo
   '2026-05-01':'feriado','2026-05-25':'feriado',
   '2026-06-15':'feriado','2026-06-20':'feriado',
-  '2026-07-09':'feriado',
-  '2026-08-17':'feriado',
+  '2026-07-09':'feriado',                         // Independencia
+  '2026-07-10':'puente',                          // puente posterior
+  '2026-08-17':'feriado',                         // San Martín
+  '2026-09-17':'feriado-esp',                     // Día del Profesor (Facultad)
+  '2026-09-21':'feriado-esp',                     // Día del Estudiante (Facultad)
   '2026-10-12':'feriado',
-  '2026-11-20':'feriado',
+  '2026-11-23':'feriado',                         // Soberanía Nacional (trasladado del 20 al 23)
+  '2026-12-07':'puente',                          // puente previo al 8
   '2026-12-08':'feriado','2026-12-25':'feriado',
   '2027-01-01':'feriado',
-  '2027-02-15':'feriado','2027-02-16':'feriado',
+  '2027-02-08':'feriado','2027-02-09':'feriado',  // Carnaval 2027
   '2027-03-24':'feriado',
-  // Mesas ordinarias - Turno Feb 2026
-  '2026-02-09':'mesa-o','2026-02-10':'mesa-o','2026-02-11':'mesa-o',
-  '2026-02-12':'mesa-o','2026-02-13':'mesa-o','2026-02-16':'mesa-o',
-  '2026-02-17':'mesa-o','2026-02-18':'mesa-o','2026-02-19':'mesa-o',
-  '2026-02-20':'mesa-o',
-  // Mesas ordinarias - Turno Jul 2026
-  '2026-07-20':'mesa-o','2026-07-21':'mesa-o','2026-07-22':'mesa-o',
-  '2026-07-23':'mesa-o','2026-07-24':'mesa-o',
+  // Feriado especial de facultad (Del PAA) - sábado
+  '2026-03-07':'feriado-esp',
+  // Mesas ordinarias - verificado contra Anexo II (llamados finales)
+  '2026-06-22':'mesa-o','2026-06-23':'mesa-o','2026-06-24':'mesa-o',
+  '2026-06-25':'mesa-o','2026-06-26':'mesa-o', // 1° Llamado
+  '2026-06-29':'mesa-o','2026-06-30':'mesa-o','2026-07-01':'mesa-o',
+  '2026-07-02':'mesa-o','2026-07-03':'mesa-o', // 2° Llamado
   '2026-07-27':'mesa-o','2026-07-28':'mesa-o','2026-07-29':'mesa-o',
-  // Mesas ordinarias - Turno Dic 2026
-  '2026-12-21':'mesa-o','2026-12-22':'mesa-o','2026-12-23':'mesa-o',
-  '2026-12-28':'mesa-o','2026-12-29':'mesa-o','2026-12-30':'mesa-o',
-  // Mesas ordinarias - Turno Ene-Feb 2027
-  '2027-01-04':'mesa-o','2027-01-05':'mesa-o','2027-01-06':'mesa-o',
-  '2027-01-07':'mesa-o','2027-01-08':'mesa-o','2027-01-11':'mesa-o',
-  '2027-01-12':'mesa-o','2027-01-13':'mesa-o','2027-01-14':'mesa-o',
-  '2027-01-15':'mesa-o',
-  '2027-02-08':'mesa-o','2027-02-09':'mesa-o','2027-02-10':'mesa-o',
-  '2027-02-11':'mesa-o','2027-02-12':'mesa-o',
-  // Mesas especiales
-  '2026-04-20':'mesa-e','2026-04-21':'mesa-e','2026-04-22':'mesa-e',
-  '2026-04-23':'mesa-e','2026-04-24':'mesa-e',
-  '2026-09-21':'mesa-e','2026-09-22':'mesa-e','2026-09-23':'mesa-e',
-  '2026-09-24':'mesa-e','2026-09-25':'mesa-e',
-  // Inscripciones
-  '2026-04-13':'inscr','2026-04-14':'inscr','2026-04-15':'inscr',
-  '2026-04-16':'inscr','2026-04-17':'inscr',
-  '2026-07-27':'inscr','2026-07-28':'inscr','2026-07-29':'inscr',
-  '2026-07-30':'inscr','2026-07-31':'inscr',
-  '2026-11-09':'inscr','2026-11-10':'inscr','2026-11-11':'inscr',
-  '2026-11-12':'inscr','2026-11-13':'inscr',
+  '2026-07-30':'mesa-o','2026-07-31':'mesa-o', // 3° Llamado
+  '2026-11-24':'mesa-o','2026-11-25':'mesa-o','2026-11-26':'mesa-o',
+  '2026-11-27':'mesa-o',                       // 4° Llamado
+  '2026-11-30':'mesa-o','2026-12-01':'mesa-o','2026-12-02':'mesa-o',
+  '2026-12-03':'mesa-o','2026-12-04':'mesa-o', // 5° Llamado
+  '2026-12-14':'mesa-o','2026-12-15':'mesa-o','2026-12-16':'mesa-o',
+  '2026-12-17':'mesa-o','2026-12-18':'mesa-o', // 6° Llamado
+  '2027-02-10':'mesa-o','2027-02-11':'mesa-o','2027-02-12':'mesa-o',
+  '2027-02-13':'mesa-o','2027-02-14':'mesa-o','2027-02-15':'mesa-o','2027-02-16':'mesa-o', // 7° Llamado
+  '2027-02-22':'mesa-o','2027-02-23':'mesa-o','2027-02-24':'mesa-o',
+  '2027-02-25':'mesa-o','2027-02-26':'mesa-o', // 8° Llamado
+  // Mesas especiales - verificado contra Anexo II
+  '2026-04-06':'mesa-e','2026-04-07':'mesa-e','2026-04-08':'mesa-e',
+  '2026-04-09':'mesa-e','2026-04-10':'mesa-e', // 1° Especial Abril
+  '2026-05-18':'mesa-e','2026-05-19':'mesa-e','2026-05-20':'mesa-e',
+  '2026-05-21':'mesa-e','2026-05-22':'mesa-e', // 2° Especial Mayo
+  '2026-08-24':'mesa-e','2026-08-25':'mesa-e','2026-08-26':'mesa-e',
+  '2026-08-27':'mesa-e','2026-08-28':'mesa-e', // 3° Especial Agosto
+  '2026-10-26':'mesa-e','2026-10-27':'mesa-e','2026-10-28':'mesa-e',
+  '2026-10-29':'mesa-e','2026-10-30':'mesa-e', // 4° Especial Octubre
+  // Inscripción a exámenes (Llamados Ordinarios) - Anexo II
+  '2026-06-17':'inscr','2026-06-18':'inscr','2026-06-19':'inscr', // 1° Llamado
+  '2026-06-27':'inscr','2026-06-28':'inscr',                      // 2° Llamado
+  '2026-07-19':'inscr','2026-07-20':'inscr','2026-07-21':'inscr', // 3° Llamado
+  '2026-11-18':'inscr','2026-11-19':'inscr','2026-11-20':'inscr', // 4° Llamado
+  '2026-11-28':'inscr','2026-11-29':'inscr',                      // 5° Llamado
+  '2026-12-09':'inscr','2026-12-10':'inscr',                      // 6° Llamado (08/12 ya es feriado)
+  '2027-01-31':'inscr','2027-02-01':'inscr','2027-02-02':'inscr', // 7° Llamado
+  '2027-02-17':'inscr','2027-02-18':'inscr','2027-02-19':'inscr', // 8° Llamado
+  // Inscripción a exámenes (Llamados Especiales) - Anexo II
+  '2026-03-29':'inscr','2026-03-30':'inscr','2026-03-31':'inscr', // 1° Especial Abril
+  '2026-05-10':'inscr','2026-05-11':'inscr','2026-05-12':'inscr', // 2° Especial Mayo
+  '2026-08-18':'inscr','2026-08-19':'inscr','2026-08-20':'inscr', // 3° Especial Agosto
+  '2026-10-18':'inscr','2026-10-19':'inscr','2026-10-20':'inscr', // 4° Especial Octubre
 };
 
 const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -2755,8 +2821,8 @@ function renderMes(y, m) {
   const diasMes   = new Date(y, m+1, 0).getDate();
   const hoy = new Date();
   const isHoy = (d) => hoy.getFullYear()===y && hoy.getMonth()===m && hoy.getDate()===d;
-  let html = `<div class="cal-mes">
-    <div class="cal-mes-titulo">${MESES_NOM[m]} ${y}</div>
+  let html = `<div class="cal-mes" onclick="abrirMesModal(${y},${m})">
+    <div class="cal-mes-titulo">${MESES_NOM[m]} ${y} <span class="tap-hint">👆</span></div>
     <div class="cal-dias-header">`;
   DIAS_SH.forEach((d,i) => html += `<div class="cal-dh${i===0?' dom':''}">${d}</div>`);
   html += `</div>`;
@@ -2806,6 +2872,7 @@ function rCal() {
       <div class="cal-ley-item"><div class="cal-dot cd-mesa-o"></div>Mesa Ord.</div>
       <div class="cal-ley-item"><div class="cal-dot cd-mesa-e"></div>Mesa Esp.</div>
       <div class="cal-ley-item"><div class="cal-dot cd-feriado"></div>Feriado</div>
+      <div class="cal-ley-item"><div class="cal-dot cd-feriado-esp"></div>Feriado especial</div>
       <div class="cal-ley-item"><div class="cal-dot cd-puente"></div>Puente</div>
       <div class="cal-ley-item"><div class="cal-dot cd-receso"></div>Receso</div>
       <div class="cal-ley-item"><div class="cal-dot cd-inscr"></div>Inscripción</div>
@@ -2819,6 +2886,120 @@ function rCal() {
   el.innerHTML = html;
 }
 
+
+// ── DETALLE DE MES (Calendario académico) ──
+const TIPO_DIA_LABELS = {
+  feriado: '🔴 Feriado',
+  'feriado-esp': '🟡 Feriado especial (Facultad)',
+  puente:  '🟣 Día puente',
+  'mesa-o':'🔵 Mesa examen ordinaria',
+  'mesa-e':'🟢 Mesa examen especial',
+  inscr:   '🩵 Inscripción a exámenes',
+  receso:  '⚪ Receso académico',
+};
+
+function formatFechaCorta(y,m,d) {
+  return `${pZ(d)}/${pZ(m+1)}`;
+}
+
+// Agrupa un array de días (números) consecutivos en rangos: [1,2,3,7,8] → [[1,3],[7,8]]
+function agruparConsecutivos(dias) {
+  const ordenados = [...dias].sort((a,b)=>a-b);
+  const rangos = [];
+  let inicio = ordenados[0], anterior = ordenados[0];
+  for (let i = 1; i <= ordenados.length; i++) {
+    const d = ordenados[i];
+    if (d === anterior + 1) { anterior = d; continue; }
+    rangos.push([inicio, anterior]);
+    inicio = d; anterior = d;
+  }
+  return rangos;
+}
+
+function abrirMesModal(y, m) {
+  const diasMes = new Date(y, m+1, 0).getDate();
+
+  // 1. Días institucionales especiales de este mes, agrupados por tipo
+  const porTipo = {};
+  for (let d = 1; d <= diasMes; d++) {
+    const k = calKey(y, m, d);
+    if (CAL_DIAS_ESP[k]) {
+      if (!porTipo[CAL_DIAS_ESP[k]]) porTipo[CAL_DIAS_ESP[k]] = [];
+      porTipo[CAL_DIAS_ESP[k]].push(d);
+    }
+  }
+  // Receso: si el mes tiene días marcados como "receso" por CAL_RANGOS (sin estar en CAL_DIAS_ESP)
+  for (let d = 1; d <= diasMes; d++) {
+    const k = calKey(y, m, d);
+    if (CAL_DIAS_ESP[k]) continue;
+    const dt = new Date(y, m, d);
+    const rango = CAL_RANGOS.find(r => r.t === 'receso' && dt >= new Date(r.d) && dt <= new Date(r.h));
+    if (rango) { if (!porTipo['receso']) porTipo['receso'] = []; porTipo['receso'].push(d); }
+  }
+
+  let institHtml = '';
+  Object.keys(porTipo).forEach(tipo => {
+    agruparConsecutivos(porTipo[tipo]).forEach(([di, df]) => {
+      const fechaTxt = di === df ? formatFechaCorta(y,m,di) : `${formatFechaCorta(y,m,di)} – ${formatFechaCorta(y,m,df)}`;
+      institHtml += `<div class="cm-mes-item tipo-${tipo}">
+        <span class="cm-mes-fecha">${fechaTxt}</span>
+        <span class="cm-mes-txt">${TIPO_DIA_LABELS[tipo] || tipo}</span>
+      </div>`;
+    });
+  });
+  if (!institHtml) institHtml = `<div class="cm-empty">Sin fechas institucionales este mes.</div>`;
+
+  // 2. Exámenes/parciales del usuario en este mes
+  const examenesMes = state.examenes
+    .filter(e => { const f = new Date(e.fecha+'T12:00'); return f.getFullYear()===y && f.getMonth()===m; })
+    .sort((a,b) => a.fecha.localeCompare(b.fecha));
+  let examHtml = examenesMes.map(e => {
+    const mat = getM(e.materiaId);
+    const f = new Date(e.fecha+'T12:00');
+    return `<div class="cm-mes-item tipo-examen">
+      <span class="cm-mes-fecha">${formatFechaCorta(y, f.getMonth(), f.getDate())}</span>
+      <div class="cm-mes-txt">
+        <div>${mat ? mat.nombre : 'Materia'} ${e.num ? '· '+e.num : ''}</div>
+        <div class="cm-mes-sub">${TIPO_LABELS[e.tipo]||e.tipo}${e.hora?' · '+e.hora:''}${e.aula?' · '+e.aula:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if (!examHtml) examHtml = `<div class="cm-empty">No tenés exámenes cargados este mes.</div>`;
+
+  // 3. Tareas / actividades del usuario en este mes
+  const tareasMes = state.tareas
+    .filter(t => { const f = new Date(t.fecha+'T12:00'); return f.getFullYear()===y && f.getMonth()===m; })
+    .sort((a,b) => a.fecha.localeCompare(b.fecha));
+  let tareaHtml = tareasMes.map(t => {
+    const mat = getM(t.materiaId);
+    const f = new Date(t.fecha+'T12:00');
+    return `<div class="cm-mes-item tipo-tarea">
+      <span class="cm-mes-fecha">${formatFechaCorta(y, f.getMonth(), f.getDate())}</span>
+      <div class="cm-mes-txt">
+        <div>${t.titulo}${t.completada?' ✓':''}</div>
+        <div class="cm-mes-sub">${mat ? mat.nombre : 'Sin materia'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if (!tareaHtml) tareaHtml = `<div class="cm-empty">No tenés tareas cargadas este mes.</div>`;
+
+  document.getElementById('cmm-title').textContent = `${MESES_NOM[m]} ${y}`;
+  document.getElementById('cmm-body').innerHTML = `
+    <div class="cm-mes-section">
+      <div class="cm-mes-label">📅 FECHAS INSTITUCIONALES</div>
+      ${institHtml}
+    </div>
+    <div class="cm-mes-section">
+      <div class="cm-mes-label">📝 TUS EXÁMENES Y PARCIALES</div>
+      ${examHtml}
+    </div>
+    <div class="cm-mes-section">
+      <div class="cm-mes-label">📋 TUS TAREAS</div>
+      ${tareaHtml}
+    </div>
+  `;
+  document.getElementById('modal-cal-mes').classList.add('open');
+}
 
 render();
 
