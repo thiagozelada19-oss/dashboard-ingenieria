@@ -16,32 +16,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ing. MCT">
 
-<!-- Ícono generado como SVG inline convertido a data URL -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230b0d12'/%3E%3Crect x='40' y='40' width='432' height='432' rx='80' fill='%2312151d'/%3E%3Ctext x='256' y='300' font-family='Arial Black' font-size='220' font-weight='900' fill='%235eead4' text-anchor='middle'%3E1%C2%B0%3C/text%3E%3Ctext x='256' y='400' font-family='Arial' font-size='80' fill='%235eead4' text-anchor='middle' opacity='0.6'%3EMCT%3C/text%3E%3C/svg%3E">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230b0d12'/%3E%3Ctext x='256' y='320' font-family='Arial Black' font-size='220' font-weight='900' fill='%235eead4' text-anchor='middle'%3E1%C2%B0%3C/text%3E%3C/svg%3E">
-
-<!-- Manifest inline via JS (no requiere archivo externo) -->
-<script>
-  const _manifest = {
-    name: "Ingeniería Mecatrónica UNCUYO",
-    short_name: "Ing. MCT",
-    description: "Dashboard académico personal",
-    start_url: ".",
-    display: "standalone",
-    background_color: "#0b0d12",
-    theme_color: "#0b0d12",
-    orientation: "portrait-primary",
-    icons: [
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230b0d12'/%3E%3Crect x='40' y='40' width='432' height='432' rx='80' fill='%2312151d'/%3E%3Ctext x='256' y='300' font-family='Arial Black' font-size='220' font-weight='900' fill='%235eead4' text-anchor='middle'%3E1%C2%B0%3C/text%3E%3Ctext x='256' y='400' font-family='Arial' font-size='80' fill='%235eead4' text-anchor='middle' opacity='0.6'%3EMCT%3C/text%3E%3C/svg%3E",
-        sizes: "512x512", type: "image/svg+xml", purpose: "any maskable"
-      }
-    ]
-  };
-  const _blob = new Blob([JSON.stringify(_manifest)], {type:'application/json'});
-  const _murl = URL.createObjectURL(_blob);
-  document.write('<link rel="manifest" href="' + _murl + '">');
-</script>
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="manifest" href="./manifest.json">
 
 <title>Ing. MCT · 1°</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -581,6 +559,50 @@ body {
   font-size: 10px; color: var(--accent3); background: rgba(251,146,60,0.08);
   border: 1px solid rgba(251,146,60,0.2); border-radius: 8px;
   padding: 7px 10px; margin-top: 4px; line-height: 1.5;
+}
+
+/* Tarjeta "Qué cursar primero" (Correlatividades) */
+.prio-card {
+  background: linear-gradient(135deg, rgba(94,234,212,0.06), rgba(129,140,248,0.04));
+  border: 1px solid rgba(94,234,212,0.25);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.prio-title {
+  font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.5px; margin-bottom: 10px;
+}
+.prio-section-label {
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 0.5px;
+  color: var(--muted); margin-bottom: 6px;
+}
+.prio-bloque { margin-bottom: 10px; }
+.prio-bloque-txt { font-size: 11px; color: var(--text); line-height: 1.5; margin-bottom: 6px; }
+.prio-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.prio-tag {
+  font-size: 10px; padding: 4px 9px; border-radius: 999px;
+  background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+  color: var(--danger); cursor: pointer;
+}
+.prio-list { display: flex; flex-direction: column; gap: 5px; }
+.prio-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--panel2); border: 1px solid var(--border);
+  cursor: pointer; font-size: 12px;
+}
+.prio-rank {
+  font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+  color: var(--accent); background: rgba(94,234,212,0.12);
+  width: 18px; height: 18px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.prio-nombre { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prio-badge {
+  font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+  padding: 3px 7px; border-radius: 999px; flex-shrink: 0;
+  background: rgba(129,140,248,0.15); color: var(--accent2);
 }
 
 /* Modal plan materia */
@@ -2190,6 +2212,69 @@ function materiasQueDependen(id) {
   return PLAN_FLAT.filter(m => m.fuertes.includes(id) || m.debiles.includes(id) || m.final.includes(id));
 }
 
+// Sugerencia de "qué cursar primero": combina 2 señales —
+// A) bloques de regularización incompletos, ordenados por cuán cerca están de completarse
+//    (así se prioriza terminar el bloque que menos falta, para destrabar el próximo semestre)
+// B) materias disponibles ahora mismo, ordenadas por "impacto" (cuántas otras dependen de ella)
+function calcularPrioridades(ps) {
+  const bloques = REGLA_BLOQUE.map(r => {
+    const ids = getIdsBloque(r.requiere);
+    const faltantes = ids.filter(id => getEstadoCorr(ps, id) !== 'aprobada')
+      .map(id => getPlanMateria(id))
+      .filter(Boolean);
+    const bloqueReq  = PLAN.find(b => b.semGlobal === r.requiere);
+    const bloqueDest = PLAN.find(b => b.semGlobal === r.semGlobal);
+    return { regla: r, faltantes, total: ids.length, bloqueReq, bloqueDest };
+  }).filter(b => b.faltantes.length > 0);
+  bloques.sort((a, b) => a.faltantes.length - b.faltantes.length);
+
+  const disponibles = PLAN_FLAT.filter(m => getEstadoCorr(ps, m.id) === 'libre' && puedesCursar(m, ps));
+  const conImpacto = disponibles.map(m => ({
+    materia: m,
+    impacto: materiasQueDependen(m.id).length,
+  }));
+  conImpacto.sort((a, b) => b.impacto - a.impacto || a.materia.semGlobal - b.materia.semGlobal);
+
+  return { bloques: bloques.slice(0, 2), top: conImpacto.slice(0, 5) };
+}
+
+// Arma el HTML de la tarjeta "Qué cursar primero" para el tope de Correlatividades
+function renderPrioridadesCard(ps) {
+  const { bloques, top } = calcularPrioridades(ps);
+  if (!bloques.length && !top.length) return '';
+
+  let bloquesHtml = '';
+  if (bloques.length) {
+    bloquesHtml = bloques.map(b => {
+      const destLbl = b.bloqueDest ? `${b.bloqueDest.anio}° año / ${b.bloqueDest.semestre}° sem` : `semestre ${b.regla.semGlobal}`;
+      const reqLbl  = b.bloqueReq  ? `${b.bloqueReq.anio}° año / ${b.bloqueReq.semestre}° sem`  : `semestre ${b.regla.requiere}`;
+      const tags = b.faltantes.map(m => `<span class="prio-tag" onclick="abrirCorrMateria('${m.id}')">${m.nombre}</span>`).join('');
+      return `<div class="prio-bloque">
+        <div class="prio-bloque-txt">Para cursar el <b>${destLbl}</b> te falta aprobar <b>${b.faltantes.length}/${b.total}</b> materias del <b>${reqLbl}</b>:</div>
+        <div class="prio-tags">${tags}</div>
+      </div>`;
+    }).join('');
+  }
+
+  let topHtml = '';
+  if (top.length) {
+    topHtml = top.map((t, i) => {
+      const badge = t.impacto > 0 ? `Desbloquea ${t.impacto}` : 'Sin dependientes';
+      return `<div class="prio-item" onclick="abrirCorrMateria('${t.materia.id}')">
+        <span class="prio-rank">${i+1}</span>
+        <span class="prio-nombre">${t.materia.nombre}</span>
+        <span class="prio-badge">${badge}</span>
+      </div>`;
+    }).join('');
+  }
+
+  return `<div class="prio-card">
+    <div class="prio-title">🎯 QUÉ CURSAR PRIMERO</div>
+    ${bloquesHtml ? `<div class="prio-section-label">🔓 Priorizá destrabar</div>${bloquesHtml}` : ''}
+    ${topHtml ? `<div class="prio-section-label" style="margin-top:${bloquesHtml?'10px':'0'};">⭐ Disponibles ahora, por impacto</div><div class="prio-list">${topHtml}</div>` : ''}
+  </div>`;
+}
+
 // Re-valida todo el plan tras un cambio de estado: si alguna materia queda en un
 // estado que ya no cumple sus propios requisitos, la baja automáticamente
 // (aprobada→regular si aún puede cursarse pero no rendirse; o →libre si ya ni eso).
@@ -2306,6 +2391,8 @@ function rCorr() {
       </div>
       <div style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent);">${pct}%</div>
     </div>`;
+
+  html += renderPrioridadesCard(ps);
 
   Object.keys(porAnio).sort((a,b)=>a-b).forEach(anio => {
     const bloquesAnio = porAnio[anio];
@@ -3003,62 +3090,56 @@ function abrirMesModal(y, m) {
 
 render();
 
-// ── PWA: SERVICE WORKER INLINE ──
-// Embebemos el SW como un Blob para no necesitar archivo externo
-const SW_CODE = `
-const CACHE = 'ing-mct-v1';
-const ASSETS = []; // el archivo se cachea solo al instalarse
-
-self.addEventListener('install', e => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  // Solo cachear GET del propio origen (no la API de Anthropic)
-  if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('api.anthropic.com')) return;
-  if (e.request.url.includes('fonts.googleapis.com') || e.request.url.includes('fonts.gstatic.com')) {
-    e.respondWith(
-      caches.open(CACHE).then(cache =>
-        cache.match(e.request).then(hit =>
-          hit || fetch(e.request).then(res => { cache.put(e.request, res.clone()); return res; })
-        ).catch(() => new Response('', {status: 503}))
-      )
-    );
-    return;
-  }
-  e.respondWith(
-    caches.open(CACHE).then(cache =>
-      cache.match(e.request).then(hit => {
-        const net = fetch(e.request).then(res => {
-          if (res.ok) cache.put(e.request, res.clone());
-          return res;
-        }).catch(() => hit || new Response('Sin conexión', {status: 503}));
-        return hit || net;
-      })
-    )
-  );
-});
-`;
-
+// ── PWA: SERVICE WORKER (archivo externo sw.js) ──
 if ('serviceWorker' in navigator) {
-  const swBlob = new Blob([SW_CODE], { type: 'application/javascript' });
-  const swUrl  = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swUrl, { scope: './' })
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
     .then(reg => {
       console.log('[PWA] Service Worker registrado:', reg.scope);
-      // Cachear el propio HTML
-      caches.open('ing-mct-v1').then(cache => cache.add(location.href).catch(()=>{}));
+
+      // Si ya hay un SW esperando (se actualizó el sitio mientras no estabas), avisamos
+      if (reg.waiting) mostrarUpdateBanner(reg);
+
+      reg.addEventListener('updatefound', () => {
+        const nuevo = reg.installing;
+        if (!nuevo) return;
+        nuevo.addEventListener('statechange', () => {
+          if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarUpdateBanner(reg);
+          }
+        });
+      });
     })
     .catch(err => console.warn('[PWA] SW no disponible:', err));
+
+  // Cuando el nuevo SW toma control, recargamos una sola vez para mostrar la versión nueva
+  let _recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_recargando) return;
+    _recargando = true;
+    window.location.reload();
+  });
+}
+
+function mostrarUpdateBanner(reg) {
+  if (document.getElementById('update-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'update-banner';
+  b.style.cssText = `
+    position:fixed; bottom:calc(var(--nav-h) + 12px); left:12px; right:12px;
+    background:#1e2334; border:1px solid var(--accent); border-radius:14px;
+    padding:12px 14px; display:flex; align-items:center; gap:10px;
+    z-index:1600; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  `;
+  b.innerHTML = `
+    <span style="font-size:20px;">✨</span>
+    <span style="flex:1;font-size:12px;color:var(--text);">Hay una versión nueva de la app</span>
+    <button style="background:var(--accent);color:#0b0d12;border:none;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;">Actualizar</button>
+  `;
+  b.querySelector('button').onclick = () => {
+    reg.waiting && reg.waiting.postMessage('SKIP_WAITING');
+    b.remove();
+  };
+  document.body.appendChild(b);
 }
 
 // ── PWA: INDICADOR OFFLINE ──
@@ -3090,14 +3171,29 @@ actualizarEstadoConexion();
 // ── PWA: BANNER DE INSTALACIÓN ──
 let _deferredPrompt = null;
 
+// ¿Ya está corriendo instalada (standalone)? Si es así, nunca mostramos el banner.
+function appYaInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredPrompt = e;
   // Solo mostrar si no fue rechazado antes
-  if (!localStorage.getItem('pwa-dismissed')) {
+  if (!localStorage.getItem('pwa-dismissed') && !appYaInstalada()) {
     setTimeout(() => mostrarInstallBanner(), 1500);
   }
 });
+
+// iOS Safari NUNCA dispara 'beforeinstallprompt', así que si detectamos iOS
+// mostramos el mismo banner igual; al tocar "Instalar" ahí se explican los
+// pasos manuales (Compartir → Agregar a inicio), ver instalarPWA().
+(function iosInstallFallback() {
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  if (esIOS && !localStorage.getItem('pwa-dismissed') && !appYaInstalada()) {
+    setTimeout(() => mostrarInstallBanner(), 1500);
+  }
+})();
 
 window.addEventListener('appinstalled', () => {
   ocultarInstallBanner();
