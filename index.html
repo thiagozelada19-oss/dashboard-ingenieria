@@ -179,6 +179,48 @@ body {
 }
 .card-sm { padding: 14px; }
 
+/* ── LÍNEA DE TIEMPO DE LA CARRERA ── */
+#timeline-scroll {
+  display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 14px;
+  scrollbar-width: thin;
+}
+.tl-block {
+  flex-shrink: 0; width: 64px;
+  border-radius: 12px; border: 1px solid var(--border);
+  background: var(--panel2);
+  padding: 10px 6px 8px;
+  text-align: center;
+}
+.tl-block.tl-pasado    { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.05); }
+.tl-block.tl-actual    { border-color: var(--accent); background: rgba(94,234,212,0.1); box-shadow: 0 0 0 2px rgba(94,234,212,0.2); }
+.tl-block.tl-futuro    { opacity: 0.85; }
+.tl-block.tl-extra     { border-style: dashed; opacity: 0.6; }
+.tl-block-num {
+  font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted);
+  margin-bottom: 4px;
+}
+.tl-block-ring { width: 34px; height: 34px; margin: 0 auto 4px; position: relative; }
+.tl-block-pct {
+  font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+  color: var(--text);
+}
+.tl-block-lbl { font-size: 8px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+.tl-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.tl-stat-box {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px;
+}
+.tl-stat-num { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: var(--accent); }
+.tl-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tl-msg {
+  margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+  font-size: 12px; line-height: 1.5;
+}
+.tl-msg.ok      { background: rgba(74,222,128,0.08); color: var(--success); border: 1px solid rgba(74,222,128,0.2); }
+.tl-msg.warn    { background: rgba(251,146,60,0.08); color: var(--accent3); border: 1px solid rgba(251,146,60,0.2); }
+.tl-msg.neutral { background: var(--panel2); color: var(--muted); border: 1px solid var(--border); }
+
 /* ── SECTION HEADER ── */
 .sec-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -936,7 +978,37 @@ body {
       <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Promedio por materia</div>
       <div id="barras"></div>
     </div>
+
+    <div class="card" id="timeline-card">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">📈 Línea de tiempo de la carrera</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Basado en tu progreso en Correlatividades</div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">¿EN QUÉ SEMESTRE ESTÁS CURSANDO AHORA?</label>
+        <input class="form-input" type="number" id="tl-semestre-actual" min="1" max="20"
+          oninput="guardarSemestreActual(this.value)" placeholder="Ej: 3">
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4;">
+          El ritmo se calcula sobre los semestres ya <b>completados</b> (este todavía en curso no cuenta).
+        </div>
+      </div>
+
+      <div id="timeline-scroll"></div>
+      <div id="timeline-stats"></div>
+    </div>
   </section>
+
+  <!-- Detalle de exámenes próximos (Avance) -->
+  <div class="modal-overlay" id="modal-prox-examenes">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">📅 Exámenes próximos</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:-14px;margin-bottom:14px;">En los próximos 30 días</div>
+      <div id="prox-examenes-list"></div>
+      <div class="modal-btns">
+        <button class="mbtn mbtn-cancel" onclick="closeModal('modal-prox-examenes')">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- CORRELATIVIDADES -->
   <section id="sec-corr" class="section">
@@ -1602,7 +1674,7 @@ function fabAction(){
 }
 
 // ── RENDER ──
-function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rAvance(); rCorr(); rCal(); fillSelects(); actualizarAlertas(); }
+function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rAvance(); rCorr(); rTimeline(); rCal(); fillSelects(); actualizarAlertas(); }
 
 let mostrarArchivadas = false;
 
@@ -2003,8 +2075,8 @@ function rAvance(){
     {icon:'🎓',num:pf,lbl:'Prom. finales (0-10)',col:'var(--accent5)'},
     {icon:'📚',num:total,lbl:'Materias',col:'var(--accent2)'},
     {icon:'📋',num:pend,lbl:'Tareas pend.',col:'var(--accent3)'},
-    {icon:'📅',num:proxExam,lbl:'Exám. próximos',col:'var(--accent4)'},
-  ].map(s=>`<div class="stat-box" style="border-color:${s.col}22;">
+    {icon:'📅',num:proxExam,lbl:'Exám. próximos',col:'var(--accent4)',onclick:'abrirProximosExamenes()'},
+  ].map(s=>`<div class="stat-box" style="border-color:${s.col}22;${s.onclick?'cursor:pointer;':''}" ${s.onclick?`onclick="${s.onclick}"`:''}>
     <div class="stat-icon">${s.icon}</div>
     <div class="stat-num" style="color:${s.col};">${s.num}</div>
     <div class="stat-lbl">${s.lbl}</div>
@@ -2038,6 +2110,45 @@ function rAvance(){
       <div class="barra-wrap"><div class="barra-fill" style="width:${p?Math.min(100,parseFloat(p)):0}%;background:${col};"></div></div>
     </div>`;
   }).join('');
+}
+
+// Muestra el detalle de los exámenes "próximos" (mismo criterio que el stat de Avance: 0-30 días)
+function abrirProximosExamenes() {
+  const lista = document.getElementById('prox-examenes-list');
+  let exs = state.examenes
+    .filter(e => { const d = diasHasta(e.fecha); return d >= 0 && d <= 30; })
+    .sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+  if (!exs.length) {
+    lista.innerHTML = `<div class="empty-state"><span class="icon">🎉</span>No tenés exámenes en los próximos 30 días.</div>`;
+  } else {
+    lista.innerHTML = exs.map(e => {
+      const mat = getM(e.materiaId);
+      const d = diasHasta(e.fecha);
+      const f = new Date(e.fecha+'T12:00');
+      const urgente = d <= 7;
+      const colorStr = mat ? colorCSS(mat.color) : 'var(--accent)';
+      return `<div class="examen-row ${urgente?'examen-urgente':''}" onclick="irAExamen()" style="cursor:pointer;">
+        <div class="examen-fecha-box" style="${urgente?'border-color:var(--danger);color:var(--danger);':'color:'+colorStr}">
+          <div class="examen-dia-num">${f.getDate()}</div>
+          <div class="examen-mes">${MESES[f.getMonth()]}</div>
+        </div>
+        <div class="examen-info">
+          <div class="examen-titulo">${mat?mat.nombre:'—'} ${e.num?'· '+e.num:''}</div>
+          <div class="examen-sub">${e.hora?e.hora+' · ':''}${e.aula||''} · ${d===0?'Hoy':d===1?'Mañana':'En '+d+' días'}</div>
+        </div>
+        <span class="examen-type-badge ${TIPO_CLS[e.tipo]}">${TIPO_LABELS[e.tipo]}</span>
+      </div>`;
+    }).join('');
+  }
+  openModal('modal-prox-examenes');
+}
+
+// Cierra el modal y te lleva a la sección de Exámenes (por si querés editar/eliminar alguno)
+function irAExamen() {
+  closeModal('modal-prox-examenes');
+  const btn = document.querySelector('.nav-item[onclick*="examenes"]');
+  if (btn) showSec('examenes', btn);
 }
 
 // ── CORRELATIVIDADES ──
@@ -2275,6 +2386,114 @@ function renderPrioridadesCard(ps) {
   </div>`;
 }
 
+// ── LÍNEA DE TIEMPO DE LA CARRERA (Avance) ──
+function getSemestreActual() {
+  const v = parseInt(localStorage.getItem('ing1-semestre-actual'));
+  return (v && v > 0) ? v : null;
+}
+function guardarSemestreActual(v) {
+  const n = parseInt(v);
+  if (n && n > 0) localStorage.setItem('ing1-semestre-actual', String(n));
+  else localStorage.removeItem('ing1-semestre-actual');
+  rTimeline();
+}
+
+function rTimeline() {
+  const scrollEl = document.getElementById('timeline-scroll');
+  const statsEl  = document.getElementById('timeline-stats');
+  const inputEl  = document.getElementById('tl-semestre-actual');
+  if (!scrollEl || !statsEl) return;
+
+  const ps = getPlanState();
+  const semestreActual = getSemestreActual();
+  if (inputEl && document.activeElement !== inputEl) inputEl.value = semestreActual || '';
+
+  const totalPlan     = PLAN_FLAT.length;
+  const aprobadasPlan = PLAN_FLAT.filter(m => getEstadoCorr(ps, m.id) === 'aprobada').length;
+  const faltantes     = totalPlan - aprobadasPlan;
+
+  // Ritmo: materias aprobadas por semestre YA COMPLETADO (el semestre actual todavía
+  // está en curso, así que no cuenta como "transcurrido" para este cálculo).
+  const semestresCompletados = semestreActual ? Math.max(0, semestreActual - 1) : 0;
+  const ritmo = semestresCompletados > 0 ? aprobadasPlan / semestresCompletados : null;
+  const semestresRestantes = (ritmo && ritmo > 0) ? Math.ceil(faltantes / ritmo) : null;
+  const semestreEgreso = (semestreActual && semestresRestantes != null) ? semestreActual + semestresRestantes : null;
+  const extraSobrePlan = semestreEgreso != null ? Math.max(0, semestreEgreso - 11) : 0;
+
+  // ── Bloques de la línea de tiempo: los 11 semestres oficiales + extras proyectados ──
+  const extraMostrado = Math.min(extraSobrePlan, 20); // tope visual para casos extremos
+  const totalBloquesTimeline = 11 + extraMostrado;
+  let bloquesHtml = '';
+  for (let sg = 1; sg <= totalBloquesTimeline; sg++) {
+    if (sg <= 11) {
+      const bloque = PLAN.find(b => b.semGlobal === sg);
+      const ids = getIdsBloque(sg);
+      const aprob = ids.filter(id => getEstadoCorr(ps, id) === 'aprobada').length;
+      const pct = ids.length ? Math.round((aprob / ids.length) * 100) : 0;
+      const estadoCls = semestreActual == null ? '' :
+        sg < semestreActual ? 'tl-pasado' : sg === semestreActual ? 'tl-actual' : 'tl-futuro';
+      const circ = 100; // perímetro aprox del anillo (r≈16)
+      bloquesHtml += `<div class="tl-block ${estadoCls}">
+        <div class="tl-block-num">SEM ${sg}</div>
+        <div class="tl-block-ring">
+          <svg width="34" height="34" viewBox="0 0 34 34">
+            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--border)" stroke-width="4"/>
+            <circle cx="17" cy="17" r="14" fill="none" stroke="${pct===100?'var(--success)':'var(--accent)'}" stroke-width="4"
+              stroke-dasharray="88" stroke-dashoffset="${88-(pct/100)*88}" stroke-linecap="round"
+              transform="rotate(-90 17 17)"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <span class="tl-block-pct">${pct}%</span>
+          </div>
+        </div>
+        <div class="tl-block-lbl">${bloque ? bloque.anio+'°/'+bloque.semestre+'°' : ''}</div>
+      </div>`;
+    } else {
+      // Semestre extra proyectado (más allá del plan ideal de 11)
+      const extraNum = sg - 11;
+      bloquesHtml += `<div class="tl-block tl-extra">
+        <div class="tl-block-num">+${extraNum}</div>
+        <div class="tl-block-ring" style="display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:16px;">⏳</span>
+        </div>
+        <div class="tl-block-lbl">extra</div>
+      </div>`;
+    }
+  }
+  scrollEl.innerHTML = bloquesHtml;
+
+  // ── Estadísticas y mensaje ──
+  let statsHtml = `<div class="tl-stat-row">
+    <div class="tl-stat-box">
+      <div class="tl-stat-num">${aprobadasPlan}/${totalPlan}</div>
+      <div class="tl-stat-lbl">Materias aprobadas</div>
+    </div>
+    <div class="tl-stat-box">
+      <div class="tl-stat-num">${ritmo ? ritmo.toFixed(1) : '—'}</div>
+      <div class="tl-stat-lbl">Materias / semestre</div>
+    </div>
+  </div>`;
+
+  if (!semestreActual) {
+    statsHtml += `<div class="tl-msg neutral">Cargá en qué semestre estás cursando para ver una proyección de cuánto te falta para recibirte.</div>`;
+  } else if (faltantes === 0) {
+    statsHtml += `<div class="tl-msg ok">🎉 ¡Ya tenés todas las materias del plan aprobadas!</div>`;
+  } else if (!ritmo || ritmo <= 0) {
+    const msg = semestresCompletados === 0
+      ? 'Todavía estás en tu primer semestre — necesitás completar al menos uno para poder estimar tu ritmo.'
+      : 'Todavía no tenés materias aprobadas en Correlatividades — marcalas ahí para poder estimar tu ritmo.';
+    statsHtml += `<div class="tl-msg neutral">${msg}</div>`;
+  } else {
+    const cls = extraSobrePlan === 0 ? 'ok' : extraSobrePlan <= 2 ? 'warn' : 'warn';
+    const msg = extraSobrePlan === 0
+      ? `Vas al ritmo del plan ideal: te faltan <b>${faltantes}</b> materias y, a tu ritmo actual, terminarías en el <b>semestre ${semestreEgreso}</b> — igual que el plan oficial (11 semestres).`
+      : `Te faltan <b>${faltantes}</b> materias. A tu ritmo actual (${ritmo.toFixed(1)} materias/semestre), terminarías en el <b>semestre ${semestreEgreso}</b>, es decir <b>${extraSobrePlan} semestre${extraSobrePlan>1?'s':''} más</b> que el plan ideal de 11.${extraSobrePlan>20?' (se muestran solo los primeros 20 en la línea de tiempo)':''}`;
+    statsHtml += `<div class="tl-msg ${cls}">${msg}</div>`;
+  }
+
+  statsEl.innerHTML = statsHtml;
+}
+
 // Re-valida todo el plan tras un cambio de estado: si alguna materia queda en un
 // estado que ya no cumple sus propios requisitos, la baja automáticamente
 // (aprobada→regular si aún puede cursarse pero no rendirse; o →libre si ya ni eso).
@@ -2347,6 +2566,7 @@ function setEstadoCorr(id, estado) {
   }
 
   rCorr();
+  rTimeline();
   actualizarAlertas();
   // Si el modal de detalle está abierto en esta materia, refrescar su contenido
   if (document.getElementById('modal-corr-materia').classList.contains('open') && corrMateriaAbierta === id) {
