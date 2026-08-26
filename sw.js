@@ -1,7 +1,7 @@
 // Service Worker - Dashboard Ing. Mecatrónica UNCUYO
 // Subí este número cada vez que quieras forzar que los usuarios reciban
 // la versión nueva del sitio (invalida la caché vieja automáticamente).
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE = 'ing-mct-' + CACHE_VERSION;
 
 const PRECACHE_ASSETS = [
@@ -10,6 +10,7 @@ const PRECACHE_ASSETS = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js',
 ];
 
 self.addEventListener('install', e => {
@@ -40,8 +41,8 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   if (url.includes('api.anthropic.com')) return;
 
-  // Fuentes de Google: cache-first (casi nunca cambian)
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+  // Fuentes de Google y librerías de CDN: cache-first (casi nunca cambian)
+  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') || url.includes('cdnjs.cloudflare.com')) {
     e.respondWith(
       caches.open(CACHE).then(cache =>
         cache.match(e.request).then(hit =>

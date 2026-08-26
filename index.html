@@ -1365,7 +1365,25 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- Pantalla de carga inicial (mientras se leen los datos de IndexedDB) -->
+<div id="boot-loading" style="position:fixed; inset:0; background:#0b0d12; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px; font-family:'Space Mono',monospace; color:#5eead4;">
+  <div style="width:32px; height:32px; border:3px solid #1e2334; border-top-color:#5eead4; border-radius:50%; animation:boot-spin 0.8s linear infinite;"></div>
+  <div style="font-size:11px; color:#64748b; letter-spacing:0.5px;">Cargando tus datos…</div>
+</div>
+<style>@keyframes boot-spin { to { transform: rotate(360deg); } }</style>
+
+<!-- localForage: wrapper sobre IndexedDB (con fallback automático a WebSQL/localStorage si el navegador no soporta IndexedDB) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <script>
+// ── ALMACENAMIENTO (IndexedDB vía localForage) ──
+// Reemplaza el uso directo de localStorage por una base de datos IndexedDB local,
+// más robusta, con mayor capacidad y mejor persistencia que localStorage.
+localforage.config({
+  name: 'IngMCT',
+  storeName: 'ing1_datos',
+  description: 'Datos académicos de la app Ing. Mecatrónica'
+});
+
 // ── STATE ──
 let curSec = 'materias';
 let editingMateriaId = null;
@@ -1383,8 +1401,35 @@ const DEFAULT_STATE = {
   horario: [],
 };
 
-// ── LOCAL STORAGE ──
+// ── ALMACENAMIENTO ──
 const APP_VERSION = 'v13';
+
+// Copias en memoria de los datos persistidos, para poder leerlas de forma
+// sincrónica en el resto del código (IndexedDB es asíncrono por naturaleza).
+// Se cargan una vez al arrancar la app (ver bootApp()) y se mantienen
+// actualizadas en cada escritura.
+let _lastSaveCache = null;
+let _planStateCache = {};
+let _semestreActualCache = null;
+let _pwaDismissedCache = false;
+
+// Migra una única vez los datos que pudieran existir en localStorage
+// (versiones anteriores de la app) hacia IndexedDB, y limpia localStorage.
+async function migrarDesdeLocalStorage() {
+  try {
+    const yaMigrado = await localforage.getItem('ing1-migrado-v1');
+    if (yaMigrado) return;
+    const claves = ['ing1-state', 'ing1-version', 'ing1-lastSave', 'ing1-plan', 'ing1-semestre-actual', 'pwa-dismissed'];
+    for (const k of claves) {
+      const v = localStorage.getItem(k);
+      if (v !== null) await localforage.setItem(k, v);
+    }
+    await localforage.setItem('ing1-migrado-v1', '1');
+    claves.forEach(k => localStorage.removeItem(k));
+  } catch (e) {
+    console.warn('[storage] No se pudo migrar datos previos de localStorage:', e);
+  }
+}
 
 // ── EXPORT / IMPORT ──
 function exportarDatos() {
@@ -1446,7 +1491,7 @@ function actualizarInfoBackup() {
   if (!el) return;
   const ps     = getPlanState();
   const aprobadas = Object.values(ps).filter(v => v === 'aprobada').length;
-  const ultima = localStorage.getItem('ing1-lastSave');
+  const ultima = _lastSaveCache;
   el.innerHTML = `
     ${state.materias.length} materias · ${state.tareas.length} tareas · ${state.examenes.length} exámenes<br>
     ${aprobadas} materias aprobadas en correlativas<br>
@@ -1459,27 +1504,45 @@ function actualizarInfoBackup() {
 // cambiar para forzar reset de datos
 function saveState() {
   try {
-    localStorage.setItem('ing1-state', JSON.stringify(state));
-    localStorage.setItem('ing1-version', APP_VERSION);
-    localStorage.setItem('ing1-lastSave', new Date().toISOString());
+    _lastSaveCache = new Date().toISOString();
+    localforage.setItem('ing1-state', JSON.stringify(state)).catch(e => console.warn('[storage] saveState:', e));
+    localforage.setItem('ing1-version', APP_VERSION).catch(e => console.warn('[storage] saveState:', e));
+    localforage.setItem('ing1-lastSave', _lastSaveCache).catch(e => console.warn('[storage] saveState:', e));
   } catch(e) {}
 }
-function loadState() {
-  try {
-    const ver = localStorage.getItem('ing1-version');
-    if (ver !== APP_VERSION) return null; // versión nueva → usar defaults
-    const s = localStorage.getItem('ing1-state');
-    if (s) return JSON.parse(s);
-  } catch(e) {}
-  return null;
+
+let state; // se inicializa de forma asíncrona en bootApp()
+
+// ── ARRANQUE ASÍNCRONO DE LA APP ──
+// IndexedDB es asíncrono, así que leemos todos los datos guardados ANTES
+// de armar el estado inicial y disparar el primer render().
+async function bootApp() {
+  await migrarDesdeLocalStorage();
+
+  const [ver, s, lastSave, planRaw, semestre, dismissed] = await Promise.all([
+    localforage.getItem('ing1-version'),
+    localforage.getItem('ing1-state'),
+    localforage.getItem('ing1-lastSave'),
+    localforage.getItem('ing1-plan'),
+    localforage.getItem('ing1-semestre-actual'),
+    localforage.getItem('pwa-dismissed'),
+  ]);
+
+  _lastSaveCache = lastSave || null;
+  _semestreActualCache = semestre != null ? parseInt(semestre) : null;
+  _pwaDismissedCache = !!dismissed;
+  try { _planStateCache = JSON.parse(planRaw || '{}'); } catch(e) { _planStateCache = {}; }
+
+  if (ver === APP_VERSION && s) {
+    try { state = JSON.parse(s); } catch(e) { state = null; }
+  }
+  if (!state) state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+  // Migrar materias viejas que no tengan estado
+  state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
+  // Migrar examenes si no existen
+  if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.examenes));
 }
-
-let state = loadState() || JSON.parse(JSON.stringify(DEFAULT_STATE));
-
-// Migrar materias viejas que no tengan estado
-state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
-// Migrar examenes si no existen
-if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.examenes));
 
 const HORAS = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
 const DIAS  = ['LUN','MAR','MIÉ','JUE','VIE'];
@@ -2166,7 +2229,7 @@ function getPlanMateria(id) { return PLAN_FLAT.find(m => m.id === id); }
 // (compatibilidad: si el valor guardado es `true` de una versión anterior, se interpreta como 'aprobada')
 function getPlanState() {
   try {
-    const raw = JSON.parse(localStorage.getItem('ing1-plan') || '{}');
+    const raw = _planStateCache || {};
     const out = {};
     Object.keys(raw).forEach(id => {
       const v = raw[id];
@@ -2177,7 +2240,10 @@ function getPlanState() {
   } catch(e){ return {}; }
 }
 function savePlanState(ps) {
-  try { localStorage.setItem('ing1-plan', JSON.stringify(ps)); } catch(e){}
+  try {
+    _planStateCache = ps;
+    localforage.setItem('ing1-plan', JSON.stringify(ps)).catch(e => console.warn('[storage] savePlanState:', e));
+  } catch(e){}
 }
 function getEstadoCorr(ps, id) { return ps[id] || 'libre'; }
 
@@ -2305,13 +2371,18 @@ function renderPrioridadesCard(ps) {
 
 // ── LÍNEA DE TIEMPO DE LA CARRERA (Avance) ──
 function getSemestreActual() {
-  const v = parseInt(localStorage.getItem('ing1-semestre-actual'));
+  const v = _semestreActualCache;
   return (v && v > 0) ? v : null;
 }
 function guardarSemestreActual(v) {
   const n = parseInt(v);
-  if (n && n > 0) localStorage.setItem('ing1-semestre-actual', String(n));
-  else localStorage.removeItem('ing1-semestre-actual');
+  if (n && n > 0) {
+    _semestreActualCache = n;
+    localforage.setItem('ing1-semestre-actual', String(n)).catch(e => console.warn('[storage] semestre:', e));
+  } else {
+    _semestreActualCache = null;
+    localforage.removeItem('ing1-semestre-actual').catch(e => console.warn('[storage] semestre:', e));
+  }
   rTimeline();
 }
 
@@ -3225,7 +3296,21 @@ function abrirMesModal(y, m) {
   document.getElementById('modal-cal-mes').classList.add('open');
 }
 
-render();
+// Arrancamos la app: primero cargamos los datos desde IndexedDB (async),
+// recién ahí hacemos el primer render() y sacamos la pantalla de carga.
+bootApp().then(() => {
+  render();
+  const boot = document.getElementById('boot-loading');
+  if (boot) boot.remove();
+}).catch(err => {
+  console.error('[boot] Error al iniciar la app:', err);
+  // Aún si falla la carga de datos guardados, arrancamos con el estado por defecto
+  // para que la app no quede en blanco.
+  if (!state) state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  render();
+  const boot = document.getElementById('boot-loading');
+  if (boot) boot.remove();
+});
 
 // ── PWA: SERVICE WORKER (archivo externo sw.js) ──
 if ('serviceWorker' in navigator) {
@@ -3317,7 +3402,7 @@ window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredPrompt = e;
   // Solo mostrar si no fue rechazado antes
-  if (!localStorage.getItem('pwa-dismissed') && !appYaInstalada()) {
+  if (!_pwaDismissedCache && !appYaInstalada()) {
     setTimeout(() => mostrarInstallBanner(), 1500);
   }
 });
@@ -3327,7 +3412,7 @@ window.addEventListener('beforeinstallprompt', e => {
 // pasos manuales (Compartir → Agregar a inicio), ver instalarPWA().
 (function iosInstallFallback() {
   const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  if (esIOS && !localStorage.getItem('pwa-dismissed') && !appYaInstalada()) {
+  if (esIOS && !_pwaDismissedCache && !appYaInstalada()) {
     setTimeout(() => mostrarInstallBanner(), 1500);
   }
 })();
@@ -3335,7 +3420,8 @@ window.addEventListener('beforeinstallprompt', e => {
 window.addEventListener('appinstalled', () => {
   ocultarInstallBanner();
   showToast('🎉 ¡App instalada! Ya podés usarla sin internet', 4000);
-  localStorage.setItem('pwa-dismissed', '1');
+  _pwaDismissedCache = true;
+  localforage.setItem('pwa-dismissed', '1').catch(e => console.warn('[storage] pwa-dismissed:', e));
 });
 
 function mostrarInstallBanner() {
@@ -3355,7 +3441,8 @@ function instalarPWA() {
       if (r.outcome === 'accepted') {
         showToast('⏳ Instalando...', 2000);
       } else {
-        localStorage.setItem('pwa-dismissed', '1');
+        _pwaDismissedCache = true;
+        localforage.setItem('pwa-dismissed', '1').catch(e => console.warn('[storage] pwa-dismissed:', e));
       }
       _deferredPrompt = null;
       ocultarInstallBanner();
@@ -3368,7 +3455,8 @@ function instalarPWA() {
 }
 
 function cerrarInstallBanner() {
-  localStorage.setItem('pwa-dismissed', '1');
+  _pwaDismissedCache = true;
+  localforage.setItem('pwa-dismissed', '1').catch(e => console.warn('[storage] pwa-dismissed:', e));
   ocultarInstallBanner();
 }
 </script>
