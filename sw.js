@@ -1,16 +1,21 @@
 // Service Worker - Dashboard Ing. Mecatrónica UNCUYO
 // Subí este número cada vez que quieras forzar que los usuarios reciban
 // la versión nueva del sitio (invalida la caché vieja automáticamente).
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v5';
 const CACHE = 'ing-mct-' + CACHE_VERSION;
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
+  './data.js',
+  './firebase-config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js',
 ];
 
 self.addEventListener('install', e => {
@@ -41,8 +46,8 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   if (url.includes('api.anthropic.com')) return;
 
-  // Fuentes de Google y librerías de CDN: cache-first (casi nunca cambian)
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') || url.includes('cdnjs.cloudflare.com')) {
+  // Fuentes de Google, y librerías/SDKs de CDN: cache-first (casi nunca cambian)
+  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com') || url.includes('cdnjs.cloudflare.com') || url.includes('www.gstatic.com/firebasejs')) {
     e.respondWith(
       caches.open(CACHE).then(cache =>
         cache.match(e.request).then(hit =>
@@ -52,6 +57,11 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
+
+  // Resto de llamadas a Google (Firebase Auth + Firestore en tiempo real):
+  // las dejamos viajar directo a la red, sin que el Service Worker las
+  // intercepte ni las cachee, para no interferir con la sincronización en vivo.
+  if (url.includes('googleapis.com') || url.includes('accounts.google.com')) return;
 
   // Resto (mismo origen): stale-while-revalidate
   e.respondWith(
