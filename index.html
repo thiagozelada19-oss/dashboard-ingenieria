@@ -1327,6 +1327,17 @@ body {
 
 
 <!-- Modal Backup -->
+<div class="modal-overlay" id="modal-novedades">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🆕 <span>Novedades</span></div>
+    <div id="novedades-contenido"><!-- se arma dinámicamente desde CHANGELOG, ver renderNovedades() --></div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="mbtn mbtn-ok" style="width:100%;" onclick="closeModal('modal-novedades')">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-cuenta">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1393,6 +1404,9 @@ body {
 
     <!-- Info estado actual -->
     <div id="backup-info" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-align:center;padding:8px;"></div>
+    <div style="text-align:center;margin-top:4px;">
+      <span onclick="closeModal('modal-backup'); abrirNovedades();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">🆕 Ver historial de actualizaciones</span>
+    </div>
 
     <div class="modal-btns" style="margin-top:12px;">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-backup')">Cerrar</button>
@@ -1567,21 +1581,27 @@ let state; // se inicializa de forma asíncrona en bootApp()
 // ── ARRANQUE ASÍNCRONO DE LA APP ──
 // IndexedDB es asíncrono, así que leemos todos los datos guardados ANTES
 // de armar el estado inicial y disparar el primer render().
+let _esInstalacionNueva = false;
+let _changelogVistoCache = null;
+
 async function bootApp() {
   await migrarDesdeLocalStorage();
 
-  const [ver, s, lastSave, planRaw, semestre, dismissed] = await Promise.all([
+  const [ver, s, lastSave, planRaw, semestre, dismissed, changelogVisto] = await Promise.all([
     localforage.getItem('ing1-version'),
     localforage.getItem('ing1-state'),
     localforage.getItem('ing1-lastSave'),
     localforage.getItem('ing1-plan'),
     localforage.getItem('ing1-semestre-actual'),
     localforage.getItem('pwa-dismissed'),
+    localforage.getItem('ing1-changelog-visto'),
   ]);
 
   _lastSaveCache = lastSave || null;
   _semestreActualCache = semestre != null ? parseInt(semestre) : null;
   _pwaDismissedCache = !!dismissed;
+  _changelogVistoCache = changelogVisto != null ? parseInt(changelogVisto) : null;
+  _esInstalacionNueva = !s; // no había ningún estado guardado antes: instalación nueva
   try { _planStateCache = JSON.parse(planRaw || '{}'); } catch(e) { _planStateCache = {}; }
 
   if (ver === APP_VERSION && s) {
@@ -1593,6 +1613,71 @@ async function bootApp() {
   state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
   // Migrar examenes si no existen
   if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.examenes));
+}
+
+// ── NOVEDADES / HISTORIAL DE ACTUALIZACIONES ──
+// CHANGELOG vive en data.js. Acá solo hay lógica: decidir cuándo mostrar el
+// modal (una sola vez por actualización) y armar su contenido dinámicamente,
+// para que agregar una entrada nueva en data.js alcance y sobre.
+function idUltimaNovedad() {
+  return (CHANGELOG && CHANGELOG[0]) ? CHANGELOG[0].id : 0;
+}
+
+// Arma el HTML del modal. Si soloLoNuevo=true, destaca la última entrada
+// aparte y lista el resto como "historial anterior"; si es false (cuando el
+// usuario lo abre manualmente desde el modal de Backup), muestra todo igual.
+function renderNovedades(soloLoNuevo) {
+  const cont = document.getElementById('novedades-contenido');
+  if (!cont || !CHANGELOG || !CHANGELOG.length) { if (cont) cont.innerHTML = ''; return; }
+
+  const fmtFecha = (f) => { try { return new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day:'numeric', month:'long', year:'numeric' }); } catch(e){ return f; } };
+  const tarjeta = (entry, destacada) => `
+    <div style="background:${destacada ? 'var(--accent-soft, var(--panel2))' : 'var(--panel2)'}; border:1px solid ${destacada ? 'var(--accent)' : 'var(--border)'}; border-radius:16px; padding:14px 16px; margin-bottom:10px;">
+      <div style="font-size:10px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:4px;">${fmtFecha(entry.fecha)}</div>
+      <div style="font-size:14px; font-weight:800; margin-bottom:8px;">${destacada ? '✨ ' : ''}${entry.titulo}</div>
+      <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--text); line-height:1.6;">
+        ${entry.cambios.map(c => `<li>${c}</li>`).join('')}
+      </ul>
+    </div>`;
+
+  const [ultima, ...anteriores] = CHANGELOG;
+  let html = '';
+  if (soloLoNuevo) {
+    html += `<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Esto es lo que cambió desde la última vez que abriste la app:</div>`;
+    html += tarjeta(ultima, true);
+    if (anteriores.length) {
+      html += `<div style="font-size:11px;color:var(--muted);margin:16px 0 8px;">Actualizaciones anteriores</div>`;
+      html += anteriores.map(e => tarjeta(e, false)).join('');
+    }
+  } else {
+    html += CHANGELOG.map((e, i) => tarjeta(e, i === 0)).join('');
+  }
+  cont.innerHTML = html;
+}
+
+// Se llama una vez, después del primer render de la app (ver bootApp().then abajo).
+// Si es instalación nueva, no tiene sentido mostrar "novedades" (no había nada
+// antes) — simplemente se guarda la última entrada como ya vista.
+async function chequearNovedades() {
+  const ultimaId = idUltimaNovedad();
+  if (_esInstalacionNueva) {
+    _changelogVistoCache = ultimaId;
+    localforage.setItem('ing1-changelog-visto', String(ultimaId)).catch(()=>{});
+    return;
+  }
+  if (_changelogVistoCache !== ultimaId) {
+    renderNovedades(true);
+    openModal('modal-novedades');
+    _changelogVistoCache = ultimaId;
+    localforage.setItem('ing1-changelog-visto', String(ultimaId)).catch(()=>{});
+  }
+}
+
+// Para reabrir el historial completo manualmente en cualquier momento
+// (ver enlace en el modal de Backup).
+function abrirNovedades() {
+  renderNovedades(false);
+  openModal('modal-novedades');
 }
 
 // ── SINCRONIZACIÓN CON LA NUBE (Firebase Auth + Firestore) ──
@@ -3342,6 +3427,7 @@ bootApp().then(() => {
   render();
   const boot = document.getElementById('boot-loading');
   if (boot) boot.remove();
+  chequearNovedades();
 }).catch(err => {
   console.error('[boot] Error al iniciar la app:', err);
   // Aún si falla la carga de datos guardados, arrancamos con el estado por defecto
