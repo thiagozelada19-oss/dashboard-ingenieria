@@ -206,34 +206,34 @@ const CHANGELOG = [
     fecha: '2026-09-30',
     titulo: 'Historial de actualizaciones',
     cambios: [
-      'Ahora, cada vez que se actualice la app, vas a ver automáticamente qué cambió, la primera vez que la abras después de esa actualización.',
-      'Podés volver a ver este historial cuando quieras desde el modal de Backup.',
+      'Ahora vas a ver un cartel con las novedades cada vez que actualicemos la app.',
+      'Podés volver a verlo cuando quieras desde el botón de Backup (💾).',
     ],
   },
   {
     id: 3,
     fecha: '2026-09-28',
-    titulo: 'Inicio de sesión y sincronización en la nube',
+    titulo: 'Inicio de sesión con Google',
     cambios: [
-      'Nuevo botón ☁️ para iniciar sesión con tu cuenta de Google.',
-      'Tus materias, tareas, exámenes y correlativas ahora se sincronizan automáticamente entre todos tus dispositivos, en tiempo real.',
-      'Si no iniciás sesión, la app sigue funcionando igual que antes, guardando todo solo en este dispositivo.',
+      'Agregamos un botón (☁️) para iniciar sesión con tu cuenta de Google.',
+      'Si iniciás sesión, tus materias, tareas, exámenes y correlativas se guardan en la nube y se actualizan solas en todos tus dispositivos.',
+      'Si no querés iniciar sesión, la app sigue funcionando igual que siempre, guardando todo solo en este dispositivo.',
     ],
   },
   {
     id: 2,
     fecha: '2026-08-26',
-    titulo: 'Plan de estudios más fácil de actualizar',
+    titulo: 'Plan de estudios más rápido de actualizar',
     cambios: [
-      'El plan de estudios, los créditos por materia y el calendario académico se movieron a un archivo aparte (data.js), separado del resto del código de la app.',
+      'Hicimos cambios internos para poder actualizar el plan de estudios y el calendario académico más rápido el año que viene.',
     ],
   },
   {
     id: 1,
     fecha: '2026-08-23',
-    titulo: 'Almacenamiento más robusto',
+    titulo: 'Mejoras en el guardado de datos',
     cambios: [
-      'La app ahora guarda tus datos con IndexedDB en vez de localStorage: más capacidad y menor riesgo de perder información guardada.',
+      'Mejoramos la forma en que se guardan tus datos en el dispositivo, para reducir el riesgo de perder información.',
     ],
   },
 ];

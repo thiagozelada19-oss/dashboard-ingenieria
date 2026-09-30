@@ -170,6 +170,55 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ══════════════════════════════════════════════════════════════
+   PANTALLAS GRANDES (compu/tablet horizontal) — a partir de 880px.
+   Todo lo de acá abajo NO afecta al celular: por debajo de 880px de
+   ancho, la app se ve exactamente igual que antes (barra abajo).
+   A partir de 880px, el menú pasa a un costado, tipo app de escritorio.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 880px) {
+  :root { --sidebar-w: 220px; }
+
+  .bottom-nav {
+    top: 0; bottom: 0; right: auto;
+    width: var(--sidebar-w);
+    height: 100dvh;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 2px;
+    padding: calc(var(--top-h) + 20px) 0 16px;
+    border-top: none;
+    border-right: 1px solid var(--border);
+  }
+  .nav-item {
+    flex: none;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 13px 22px;
+    border-radius: 0;
+  }
+  .nav-item.active { background: var(--panel2); }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+    background: var(--accent); border-radius: 0 3px 3px 0;
+  }
+  .nav-icon { font-size: 19px; }
+  .nav-label { font-size: 13.5px; }
+  .nav-badge { position: static; margin-left: auto; }
+
+  .topbar { left: var(--sidebar-w); }
+  .scroll-area {
+    padding-left: calc(var(--sidebar-w) + 24px);
+    padding-right: 24px;
+    padding-bottom: 24px;
+  }
+  .toast { bottom: 24px; }
+}
+
 /* ── CARDS ── */
 .card {
   background: var(--panel);
