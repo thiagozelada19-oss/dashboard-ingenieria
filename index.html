@@ -216,7 +216,22 @@ body {
     padding-right: 24px;
     padding-bottom: 24px;
   }
-  .toast { bottom: 24px; }
+
+  /* Ancho prolijo: el contenido no se estira de punta a punta de la
+     pantalla, queda centrado dentro del espacio libre (a la derecha
+     del menú lateral), con un ancho cómodo de lectura. */
+  .section {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* El toast (mensajito flotante) se centra en el espacio de contenido
+     (a la derecha del menú lateral), no en toda la pantalla. */
+  .toast {
+    bottom: 24px;
+    left: calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2);
+  }
 }
 
 /* ── CARDS ── */
