@@ -196,11 +196,20 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 5)
+//   id      → número entero único y creciente (el siguiente es 6)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 5,
+    fecha: '2026-09-30',
+    titulo: 'Mejoras en la vista de computadora',
+    cambios: [
+      'En computadora, el menú ahora aparece a un costado en vez de abajo, como en las apps de escritorio.',
+      'El contenido se ve más ordenado: ya no se estira de punta a punta en pantallas anchas.',
+    ],
+  },
   {
     id: 4,
     fecha: '2026-09-30',
