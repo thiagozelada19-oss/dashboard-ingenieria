@@ -170,6 +170,48 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── POMODORO ── */
+.pomo-activo { text-align: center; }
+.pomo-fase { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+.pomo-materia-nombre { font-size: 15px; color: var(--muted); margin-bottom: 16px; }
+.pomo-reloj { font-family: 'Space Mono', monospace; font-size: 56px; font-weight: 700; letter-spacing: 1px; line-height: 1; margin-bottom: 14px; }
+.pomo-ciclos { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+.pomo-controles { display: flex; gap: 10px; }
+.pomo-controles .mbtn { flex: 1; }
+
+.pomo-resumen-titulo { font-size: 13px; font-weight: 800; margin-bottom: 14px; }
+.pomo-resumen-item { margin-bottom: 12px; }
+.pomo-resumen-item:last-child { margin-bottom: 0; }
+.pomo-resumen-nombre { font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+.pomo-resumen-barra-wrap { background: var(--panel2); border-radius: 8px; height: 7px; overflow: hidden; margin-bottom: 4px; }
+.pomo-resumen-barra { height: 100%; background: var(--accent); border-radius: 8px; transition: width 0.3s; }
+.pomo-resumen-tiempo { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+
+/* Píldora flotante: visible en cualquier sección mientras corre una sesión */
+.pomo-mini {
+  position: fixed;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--nav-h) + 12px);
+  background: var(--panel); border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 8px 10px 8px 14px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  cursor: pointer;
+  z-index: 60;
+  max-width: calc(100vw - 32px);
+}
+.pomo-mini.hidden { display: none; }
+.pomo-mini-emoji { font-size: 18px; }
+.pomo-mini-info { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.pomo-mini-materia { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.pomo-mini-tiempo { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+.pomo-mini-btn {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: 50%;
+  width: 30px; height: 30px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
 /* ── CORRELATIVAS: VISTA DE GRILLA (solo pantallas grandes) ──
    Oculta por defecto (celular). Se muestra y se activa el layout
    en el media query de "PANTALLAS GRANDES" más abajo — así el
@@ -294,6 +336,14 @@ body {
   #corr-list-detalle { display: none; }
   #corr-grid-desktop { display: block; }
   .corr-grid-inner { position: relative; display: flex; gap: 6px; align-items: flex-start; }
+
+  /* Pomodoro: la píldora flotante se centra en el espacio de contenido
+     (a la derecha del menú lateral) y no hace falta dejarle lugar a la
+     barra de navegación de abajo, que en compu está al costado. */
+  .pomo-mini {
+    bottom: 20px;
+    left: calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2);
+  }
 }
 
 /* ── CARDS ── */
@@ -1183,6 +1233,11 @@ body {
     <div id="cal-content"></div>
   </section>
 
+  <!-- POMODORO -->
+  <section id="sec-pomodoro" class="section">
+    <div id="pomodoro-content"></div>
+  </section>
+
   <!-- Detalle de mes (Calendario académico) -->
   <div class="modal-overlay" id="modal-cal-mes">
     <div class="modal">
@@ -1195,6 +1250,18 @@ body {
     </div>
   </div>
 
+</div>
+
+<!-- Píldora flotante del Pomodoro: visible en cualquier sección mientras
+     corre una sesión, para no tener que quedarse en la pestaña Pomodoro. -->
+<div class="pomo-mini hidden" id="pomo-mini" onclick="irAPomodoro()">
+  <span class="pomo-mini-emoji">🍅</span>
+  <span class="pomo-mini-info">
+    <span class="pomo-mini-materia" id="pomo-mini-materia">—</span>
+    <span class="pomo-mini-tiempo" id="pomo-mini-tiempo">25:00</span>
+  </span>
+  <button class="pomo-mini-btn" id="pomo-mini-toggle" onclick="event.stopPropagation(); pomodoroPausarReanudar();">⏸️</button>
+  <button class="pomo-mini-btn" onclick="event.stopPropagation(); pomodoroDetener();">⏹️</button>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -1216,6 +1283,10 @@ body {
   <button class="nav-item" onclick="showSec('horario',this)">
     <span class="nav-icon">🗓️</span>
     <span class="nav-label">Horario</span>
+  </button>
+  <button class="nav-item" onclick="showSec('pomodoro',this)">
+    <span class="nav-icon">🍅</span>
+    <span class="nav-label">Pomodoro</span>
   </button>
   <button class="nav-item" onclick="showSec('avance',this)">
     <span class="nav-icon">📊</span>
@@ -1583,10 +1654,10 @@ let editingTareaId = null;
 
 const DEFAULT_STATE = {
   materias: [
-    {id:1, nombre:'Álgebra',                      codigo:'MCT-101', color:'verde',   n1:null, n2:null, nf:null, estado:'cursando'},
-    {id:2, nombre:'Análisis Matemático I',         codigo:'MCT-102', color:'azul',    n1:null, n2:null, nf:null, estado:'cursando'},
-    {id:3, nombre:'Geometría Analítica',           codigo:'MCT-103', color:'naranja', n1:null, n2:null, nf:null, estado:'cursando'},
-    {id:4, nombre:'Introducción a la Ingeniería',  codigo:'MCT-104', color:'rosa',    n1:null, n2:null, nf:null, estado:'cursando'},
+    {id:1, nombre:'Álgebra',                      codigo:'MCT-101', color:'verde',   n1:null, n2:null, nf:null, estado:'cursando', minutosEstudio:0},
+    {id:2, nombre:'Análisis Matemático I',         codigo:'MCT-102', color:'azul',    n1:null, n2:null, nf:null, estado:'cursando', minutosEstudio:0},
+    {id:3, nombre:'Geometría Analítica',           codigo:'MCT-103', color:'naranja', n1:null, n2:null, nf:null, estado:'cursando', minutosEstudio:0},
+    {id:4, nombre:'Introducción a la Ingeniería',  codigo:'MCT-104', color:'rosa',    n1:null, n2:null, nf:null, estado:'cursando', minutosEstudio:0},
   ],
   tareas: [],
   examenes: [],
@@ -1662,7 +1733,7 @@ function importarDatos(input) {
       // Restaurar state
       state = data.state;
       // Migración de seguridad
-      state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
+      state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando', minutosEstudio: m.minutosEstudio || 0}));
       if (!state.examenes) state.examenes = [];
       saveState();
       // Restaurar planState (correlativas)
@@ -1737,8 +1808,8 @@ async function bootApp() {
   }
   if (!state) state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
-  // Migrar materias viejas que no tengan estado
-  state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando'}));
+  // Migrar materias viejas que no tengan estado ni minutos de estudio
+  state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando', minutosEstudio: m.minutosEstudio || 0}));
   // Migrar examenes si no existen
   if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.examenes));
 }
@@ -2052,7 +2123,7 @@ function actualizarAlertas() {
 }
 
 // ── SECTIONS ──
-const subs = {materias:'MATERIAS Y NOTAS',tareas:'TAREAS · ENTREGAS',examenes:'CALENDARIO · EXÁMENES',horario:'HORARIO SEMANAL',avance:'MI AVANCE',corr:'CORRELATIVIDADES',cal:'CALENDARIO ACADÉMICO 2026-27'};
+const subs = {materias:'MATERIAS Y NOTAS',tareas:'TAREAS · ENTREGAS',examenes:'CALENDARIO · EXÁMENES',horario:'HORARIO SEMANAL',pomodoro:'POMODORO · TIEMPO DE ESTUDIO',avance:'MI AVANCE',corr:'CORRELATIVIDADES',cal:'CALENDARIO ACADÉMICO 2026-27'};
 
 function showSec(sec, btn){
   curSec = sec;
@@ -2072,7 +2143,7 @@ function fabAction(){
 }
 
 // ── RENDER ──
-function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rAvance(); rCorr(); rTimeline(); rCal(); fillSelects(); actualizarAlertas(); }
+function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rPomodoro(); rAvance(); rCorr(); rTimeline(); rCal(); fillSelects(); actualizarAlertas(); }
 
 let mostrarArchivadas = false;
 
@@ -3112,6 +3183,250 @@ function unhoverCorrSq() {
   if (svg) svg.innerHTML = '';
 }
 
+// ── POMODORO ──
+// Cronómetro de estudio por materia. El tiempo trabajado se suma a
+// `minutosEstudio` de la materia elegida (se guarda con saveState(), así
+// que viaja con el resto de los datos: IndexedDB local + sincronización
+// en la nube si hay sesión iniciada). La sesión ACTIVA en sí (el cronómetro
+// corriendo) es solo de este dispositivo — no tiene sentido sincronizarla
+// entre celular y compu — pero sobrevive a que cierres y reabras la app,
+// porque se guarda con una marca de tiempo real (no un simple contador),
+// así que sigue corriendo aunque el navegador haya "congelado" la pestaña.
+let pomodoroEstado = null; // null = no hay sesión activa
+let pomodoroIntervalo = null;
+
+async function cargarPomodoroGuardado() {
+  try {
+    const guardado = await localforage.getItem('ing1-pomodoro-activo');
+    pomodoroEstado = guardado ? JSON.parse(guardado) : null;
+  } catch(e) { pomodoroEstado = null; }
+}
+function guardarPomodoroActivo() {
+  if (pomodoroEstado) localforage.setItem('ing1-pomodoro-activo', JSON.stringify(pomodoroEstado)).catch(()=>{});
+  else localforage.removeItem('ing1-pomodoro-activo').catch(()=>{});
+}
+
+// Se llama una vez al arrancar la app: retoma una sesión si había una en
+// curso, "pasando rápido" en silencio por cualquier fase que ya haya
+// terminado mientras la app estaba cerrada (sin sonidos ni carteles viejos).
+async function restaurarPomodoroAlArrancar() {
+  await cargarPomodoroGuardado();
+  if (pomodoroEstado) {
+    let vueltas = 0;
+    while (pomodoroEstado && !pomodoroEstado.pausado && segundosRestantesPomodoro() <= 0 && vueltas < 500) {
+      finalizarFasePomodoro(true);
+      vueltas++;
+    }
+    if (pomodoroEstado) arrancarIntervaloPomodoro();
+    guardarPomodoroActivo();
+  }
+}
+
+function segundosRestantesPomodoro() {
+  if (!pomodoroEstado) return 0;
+  if (pomodoroEstado.pausado) return pomodoroEstado.segRestantes;
+  const transcurrido = Math.floor((Date.now() - pomodoroEstado.inicio) / 1000);
+  return Math.max(0, pomodoroEstado.duracionSeg - transcurrido);
+}
+
+function iniciarPomodoro() {
+  const sel = document.getElementById('pomo-materia');
+  const materiaId = sel ? sel.value : '';
+  if (!materiaId) { showToast('⚠️ Elegí una materia primero'); return; }
+  const trabajoMin  = Math.max(1, parseInt(document.getElementById('pomo-trabajo').value)  || 25);
+  const descansoMin = Math.max(1, parseInt(document.getElementById('pomo-descanso').value) || 5);
+
+  pomodoroEstado = {
+    materiaId, fase: 'trabajo',
+    inicio: Date.now(), duracionSeg: trabajoMin * 60, segRestantes: trabajoMin * 60,
+    pausado: false, trabajoMin, descansoMin, ciclos: 0,
+  };
+  guardarPomodoroActivo();
+  arrancarIntervaloPomodoro();
+  rPomodoro();
+}
+
+function arrancarIntervaloPomodoro() {
+  clearInterval(pomodoroIntervalo);
+  pomodoroIntervalo = setInterval(tickPomodoro, 1000);
+}
+
+function tickPomodoro() {
+  if (!pomodoroEstado || pomodoroEstado.pausado) return;
+  if (segundosRestantesPomodoro() <= 0) finalizarFasePomodoro(false);
+  else { rPomodoro(); }
+}
+
+// silencioso=true → no suena ni muestra cartel (se usa al "ponerse al día"
+// después de haber tenido la app cerrada).
+function finalizarFasePomodoro(silencioso) {
+  if (!pomodoroEstado) return;
+  if (pomodoroEstado.fase === 'trabajo') {
+    const mat = getM(pomodoroEstado.materiaId);
+    if (mat) {
+      mat.minutosEstudio = (mat.minutosEstudio || 0) + pomodoroEstado.trabajoMin;
+      saveState();
+    }
+    pomodoroEstado.ciclos++;
+    pomodoroEstado.fase = 'descanso';
+    pomodoroEstado.duracionSeg = pomodoroEstado.descansoMin * 60;
+    if (!silencioso) notificarPomodoro('🍅 ¡Terminó el bloque de estudio! Hora de descansar.');
+  } else {
+    pomodoroEstado.fase = 'trabajo';
+    pomodoroEstado.duracionSeg = pomodoroEstado.trabajoMin * 60;
+    if (!silencioso) notificarPomodoro('⏰ Terminó el descanso. ¡A seguir estudiando!');
+  }
+  pomodoroEstado.inicio = Date.now();
+  pomodoroEstado.segRestantes = pomodoroEstado.duracionSeg;
+  pomodoroEstado.pausado = false;
+  guardarPomodoroActivo();
+  rPomodoro();
+}
+
+function notificarPomodoro(msg) {
+  showToast(msg, 4000);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+      new Notification('Ing. Mecatrónica', { body: msg, icon: './icon-192.png' });
+    }
+  } catch(e) {}
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start(); osc.stop(ctx.currentTime + 0.35);
+  } catch(e) {}
+  if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch(e) {} }
+}
+
+function pomodoroPausarReanudar() {
+  if (!pomodoroEstado) return;
+  if (pomodoroEstado.pausado) {
+    pomodoroEstado.inicio = Date.now() - (pomodoroEstado.duracionSeg - pomodoroEstado.segRestantes) * 1000;
+    pomodoroEstado.pausado = false;
+  } else {
+    pomodoroEstado.segRestantes = segundosRestantesPomodoro();
+    pomodoroEstado.pausado = true;
+  }
+  guardarPomodoroActivo();
+  rPomodoro();
+}
+
+function pomodoroDetener() {
+  if (!pomodoroEstado) return;
+  if (pomodoroEstado.fase === 'trabajo') {
+    const transcurridoSeg = pomodoroEstado.duracionSeg - segundosRestantesPomodoro();
+    const minutos = Math.round(transcurridoSeg / 60);
+    const mat = getM(pomodoroEstado.materiaId);
+    if (minutos > 0 && mat) {
+      mat.minutosEstudio = (mat.minutosEstudio || 0) + minutos;
+      saveState();
+      showToast(`⏹️ Sesión detenida. Se sumaron ${minutos} min a ${mat.nombre}`);
+    } else {
+      showToast('⏹️ Sesión detenida');
+    }
+  } else {
+    showToast('⏹️ Sesión detenida');
+  }
+  clearInterval(pomodoroIntervalo);
+  pomodoroEstado = null;
+  guardarPomodoroActivo();
+  rPomodoro();
+}
+
+function fmtMMSS(seg) {
+  const m = Math.floor(seg / 60), s = seg % 60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function irAPomodoro() {
+  const btn = document.querySelector('.nav-item[onclick*="pomodoro"]');
+  if (btn) showSec('pomodoro', btn);
+}
+
+function rPomodoro() {
+  const cont = document.getElementById('pomodoro-content');
+  if (!cont) { actualizarMiniPomodoro(); return; }
+
+  const materiasActivas = state.materias.filter(m => m.estado !== 'archivada');
+  let html = '';
+
+  if (pomodoroEstado) {
+    const mat = getM(pomodoroEstado.materiaId);
+    const restantes = segundosRestantesPomodoro();
+    const esTrabajo = pomodoroEstado.fase === 'trabajo';
+    const colorFase = esTrabajo ? 'var(--accent)' : 'var(--accent7)';
+    html += `
+      <div class="card pomo-activo">
+        <div class="pomo-fase" style="color:${colorFase};">${esTrabajo ? '📖 Estudiando' : '☕ Descanso'}</div>
+        <div class="pomo-materia-nombre">${mat ? mat.nombre : 'Materia eliminada'}</div>
+        <div class="pomo-reloj" style="color:${colorFase};">${fmtMMSS(restantes)}</div>
+        <div class="pomo-ciclos">Bloques de estudio completados: ${pomodoroEstado.ciclos}</div>
+        <div class="pomo-controles">
+          <button class="mbtn mbtn-cancel" onclick="pomodoroPausarReanudar()">${pomodoroEstado.pausado ? '▶️ Reanudar' : '⏸️ Pausar'}</button>
+          <button class="mbtn mbtn-cancel" style="color:var(--danger);" onclick="pomodoroDetener()">⏹️ Detener</button>
+        </div>
+      </div>`;
+  } else {
+    const opciones = materiasActivas.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    html += `
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">MATERIA</label>
+          <select class="form-input" id="pomo-materia">${opciones || '<option value="">Agregá una materia primero</option>'}</select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">MINUTOS DE ESTUDIO</label>
+            <input class="form-input" type="number" id="pomo-trabajo" value="25" min="1" max="180">
+          </div>
+          <div class="form-group">
+            <label class="form-label">MINUTOS DE DESCANSO</label>
+            <input class="form-input" type="number" id="pomo-descanso" value="5" min="1" max="60">
+          </div>
+        </div>
+        <button class="mbtn mbtn-ok" style="width:100%;" onclick="iniciarPomodoro()" ${materiasActivas.length ? '' : 'disabled'}>▶️ Iniciar Pomodoro</button>
+      </div>`;
+  }
+
+  const conTiempo = state.materias.filter(m => (m.minutosEstudio || 0) > 0).sort((a,b) => (b.minutosEstudio||0) - (a.minutosEstudio||0));
+  if (conTiempo.length) {
+    const maxMin = Math.max(...conTiempo.map(m => m.minutosEstudio || 0), 1);
+    html += `<div class="card">
+      <div class="pomo-resumen-titulo">⏱️ Horas de estudio acumuladas</div>
+      ${conTiempo.map(m => {
+        const horas = Math.floor((m.minutosEstudio||0) / 60);
+        const mins = (m.minutosEstudio||0) % 60;
+        const pct = Math.round(((m.minutosEstudio||0) / maxMin) * 100);
+        return `<div class="pomo-resumen-item">
+          <div class="pomo-resumen-nombre">${m.nombre}</div>
+          <div class="pomo-resumen-barra-wrap"><div class="pomo-resumen-barra" style="width:${pct}%;"></div></div>
+          <div class="pomo-resumen-tiempo">${horas > 0 ? horas + 'h ' : ''}${mins}min</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  cont.innerHTML = html;
+  actualizarMiniPomodoro();
+}
+
+function actualizarMiniPomodoro() {
+  const mini = document.getElementById('pomo-mini');
+  if (!mini) return;
+  if (!pomodoroEstado) { mini.classList.add('hidden'); return; }
+  mini.classList.remove('hidden');
+  const mat = getM(pomodoroEstado.materiaId);
+  const materiaEl = document.getElementById('pomo-mini-materia');
+  const tiempoEl = document.getElementById('pomo-mini-tiempo');
+  const toggleEl = document.getElementById('pomo-mini-toggle');
+  if (materiaEl) materiaEl.textContent = (mat ? mat.nombre : '—') + (pomodoroEstado.fase === 'descanso' ? ' · descanso' : '');
+  if (tiempoEl) tiempoEl.textContent = fmtMMSS(segundosRestantesPomodoro());
+  if (toggleEl) toggleEl.textContent = pomodoroEstado.pausado ? '▶️' : '⏸️';
+}
+
 // ── DETALLE DE MATERIA (Correlatividades) ──
 let corrMateriaAbierta = null;
 
@@ -3312,12 +3627,17 @@ function guardarMateria(){
   const estadoManual = document.getElementById('m-estado').value;
   const estado = calcularEstadoAuto(n1, n2, nf, estadoManual);
 
+  // Si estamos editando, conservamos las horas de estudio ya acumuladas
+  // (si no, se perderían cada vez que se edita el nombre o la nota).
+  const minutosPrevios = editingMateriaId ? (getM(editingMateriaId)?.minutosEstudio || 0) : 0;
+
   const obj = {
     id:     editingMateriaId || Date.now(),
     nombre,
     codigo: sanitize(document.getElementById('m-codigo').value) || '—',
     color:  document.getElementById('m-color').value,
     n1, n2, nf, estado,
+    minutosEstudio: minutosPrevios,
   };
 
   if(editingMateriaId){
@@ -3644,11 +3964,12 @@ function abrirMesModal(y, m) {
 
 // Arrancamos la app: primero cargamos los datos desde IndexedDB (async),
 // recién ahí hacemos el primer render() y sacamos la pantalla de carga.
-bootApp().then(() => {
+bootApp().then(async () => {
   render();
   const boot = document.getElementById('boot-loading');
   if (boot) boot.remove();
   chequearNovedades();
+  await restaurarPomodoroAlArrancar();
 }).catch(err => {
   console.error('[boot] Error al iniciar la app:', err);
   // Aún si falla la carga de datos guardados, arrancamos con el estado por defecto
