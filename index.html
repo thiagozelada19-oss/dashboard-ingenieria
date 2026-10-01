@@ -218,6 +218,10 @@ body {
    celular queda completamente sin tocar. */
 #corr-grid-desktop { display: none; }
 
+.corr-grid-toolbar { margin-bottom: 12px; }
+.corr-grid-direccion { display: flex; gap: 8px; margin-bottom: 8px; }
+.corr-grid-direccion-ayuda { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
 .corr-grid-leyenda {
   display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
   background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
@@ -3101,6 +3105,27 @@ function rCorr() {
 // punteada), y el resto de los cuadrados se atenúa. Tocar un cuadrado abre
 // el mismo detalle que en la lista (abrirCorrMateria), para marcarla como
 // libre, regular o aprobada.
+// Dirección del árbol al pasar el mouse: 'anteriores' (lo que esta materia
+// necesita para cursar/rendir, correlativas "hacia atrás") o 'posteriores'
+// (las materias que la necesitan a ELLA, correlativas "hacia adelante").
+let corrGridDireccion = 'posteriores';
+
+// Devuelve, para una materia, qué otras la tienen como correlativa (directa),
+// separadas en fuertes y débiles — es la búsqueda "inversa" de m.fuertes/m.debiles.
+function materiasPosterioresDirectas(id) {
+  const fuertes = [], debiles = [];
+  PLAN_FLAT.forEach(m => {
+    if (m.fuertes.includes(id)) fuertes.push(m.id);
+    if (m.debiles.includes(id)) debiles.push(m.id);
+  });
+  return { fuertes, debiles };
+}
+
+function cambiarDireccionCorrGrid(dir) {
+  corrGridDireccion = dir;
+  rCorr();
+}
+
 function rCorrGrid(ps) {
   const cont = document.getElementById('corr-grid-desktop');
   if (!cont) return;
@@ -3126,6 +3151,17 @@ function rCorrGrid(ps) {
   }).join('');
 
   cont.innerHTML = `
+    <div class="corr-grid-toolbar">
+      <div class="corr-grid-direccion">
+        <div class="chip ${corrGridDireccion === 'anteriores' ? 'on' : ''}" onclick="cambiarDireccionCorrGrid('anteriores')">⬅️ Correlativas anteriores</div>
+        <div class="chip ${corrGridDireccion === 'posteriores' ? 'on' : ''}" onclick="cambiarDireccionCorrGrid('posteriores')">➡️ Correlativas posteriores</div>
+      </div>
+      <div class="corr-grid-direccion-ayuda">
+        ${corrGridDireccion === 'anteriores'
+          ? 'Al pasar el mouse por una materia, se marca lo que ESA materia necesita para cursar o rendir.'
+          : 'Al pasar el mouse por una materia, se marca lo que la necesita a ELLA como correlativa.'}
+      </div>
+    </div>
     <div class="corr-grid-leyenda">
       <div class="ley-item"><div class="ley-dot" style="background:var(--success);"></div>Aprobada</div>
       <div class="ley-item"><div class="ley-dot" style="background:var(--accent7);"></div>Regular</div>
@@ -3170,8 +3206,9 @@ function hoverCorrSq(id) {
     svg.appendChild(linea);
   };
 
-  mat.fuertes.forEach(cid => dibujarLinea(cid, 'fuerte'));
-  mat.debiles.forEach(cid => dibujarLinea(cid, 'debil'));
+  const conexiones = corrGridDireccion === 'posteriores' ? materiasPosterioresDirectas(id) : mat;
+  conexiones.fuertes.forEach(cid => dibujarLinea(cid, 'fuerte'));
+  conexiones.debiles.forEach(cid => dibujarLinea(cid, 'debil'));
 }
 
 function unhoverCorrSq() {

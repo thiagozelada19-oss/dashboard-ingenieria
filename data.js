@@ -196,11 +196,19 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 8)
+//   id      → número entero único y creciente (el siguiente es 9)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 8,
+    fecha: '2026-10-01',
+    titulo: 'Correlativas en computadora: elegí qué dirección ver',
+    cambios: [
+      'En la grilla de correlativas (computadora), ahora podés elegir si querés ver, al pasar el mouse, las correlativas ANTERIORES de una materia (lo que necesita para cursarla) o las POSTERIORES (lo que la necesita a ella).',
+    ],
+  },
   {
     id: 7,
     fecha: '2026-10-01',

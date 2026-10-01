@@ -1,7 +1,7 @@
 // Service Worker - Dashboard Ing. Mecatrónica UNCUYO
 // Subí este número cada vez que quieras forzar que los usuarios reciban
 // la versión nueva del sitio (invalida la caché vieja automáticamente).
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v11';
 const CACHE = 'ing-mct-' + CACHE_VERSION;
 
 const PRECACHE_ASSETS = [
