@@ -170,6 +170,62 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── CORRELATIVAS: VISTA DE GRILLA (solo pantallas grandes) ──
+   Oculta por defecto (celular). Se muestra y se activa el layout
+   en el media query de "PANTALLAS GRANDES" más abajo — así el
+   celular queda completamente sin tocar. */
+#corr-grid-desktop { display: none; }
+
+.corr-grid-leyenda {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 10px 14px; margin-bottom: 14px;
+  font-size: 11px; color: var(--muted);
+}
+.corr-ley-linea { display:inline-block; width:18px; height:0; border-top: 2.5px solid var(--accent3); vertical-align:middle; margin-right:2px; }
+.corr-ley-linea.debil { border-top: 2px dashed var(--accent5); }
+
+.corr-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.corr-col-header { text-align: center; padding-bottom: 6px; margin-bottom: 2px; border-bottom: 1px solid var(--border); }
+.corr-col-anio { font-size: 11px; font-weight: 800; color: var(--text); }
+.corr-col-sem { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+.corr-col-count { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--accent); margin-top: 3px; }
+.corr-col-sqs { display: flex; flex-direction: column; gap: 8px; }
+
+.corr-sq {
+  position: relative;
+  background: var(--panel2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  min-height: 62px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 5px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, border-color 0.15s;
+}
+.corr-sq:hover { transform: scale(1.045); }
+.corr-sq-nombre {
+  font-size: 10.5px; font-weight: 700; text-align: center; line-height: 1.25; color: var(--text);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.corr-sq.cg-aprobada   { background: rgba(74,222,128,0.12);  border-color: var(--success); }
+.corr-sq.cg-regular    { background: rgba(34,211,238,0.12);  border-color: var(--accent7); }
+.corr-sq.cg-disponible { background: rgba(129,140,248,0.10); border-color: var(--accent2); }
+.corr-sq.cg-bloqueada  { background: var(--panel2); border-color: var(--border); opacity: 0.55; }
+
+/* Al pasar el mouse por un cuadrado: se atenúa todo menos él y su árbol */
+.corr-grid-inner.hover-activo .corr-sq { opacity: 0.2; }
+.corr-grid-inner.hover-activo .corr-sq.hl-self,
+.corr-grid-inner.hover-activo .corr-sq.hl-fuerte,
+.corr-grid-inner.hover-activo .corr-sq.hl-debil { opacity: 1; }
+.corr-grid-inner.hover-activo .corr-sq.hl-self   { border-color: var(--accent); border-width: 2px; }
+.corr-grid-inner.hover-activo .corr-sq.hl-fuerte { border-color: var(--accent3); }
+.corr-grid-inner.hover-activo .corr-sq.hl-debil  { border-color: var(--accent5); }
+
+.corr-grid-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.corr-linea-fuerte { stroke: var(--accent3); stroke-width: 2.5; opacity: 0.85; }
+.corr-linea-debil  { stroke: var(--accent5); stroke-width: 1.75; stroke-dasharray: 5 4; opacity: 0.7; }
+
 /* ══════════════════════════════════════════════════════════════
    PANTALLAS GRANDES (compu/tablet horizontal) — a partir de 880px.
    Todo lo de acá abajo NO afecta al celular: por debajo de 880px de
@@ -232,6 +288,12 @@ body {
     bottom: 24px;
     left: calc(var(--sidebar-w) + (100vw - var(--sidebar-w)) / 2);
   }
+
+  /* Correlativas: en pantallas grandes se usa la grilla en vez de la lista */
+  #chips-corr { display: none; }
+  #corr-list-detalle { display: none; }
+  #corr-grid-desktop { display: block; }
+  .corr-grid-inner { position: relative; display: flex; gap: 6px; align-items: flex-start; }
 }
 
 /* ── CARDS ── */
@@ -1092,6 +1154,8 @@ body {
       <div class="chip" onclick="filtrarCorr('aprobadas',this)">Aprobadas ✓</div>
     </div>
     <div id="corr-list"></div>
+    <!-- Vista de grilla, solo visible en pantallas grandes (ver rCorrGrid()) -->
+    <div id="corr-grid-desktop"></div>
   </section>
 
   <!-- Detalle de materia en Correlatividades -->
@@ -2861,6 +2925,7 @@ function rCorr() {
 
   html += renderPrioridadesCard(ps);
 
+  html += '<div id="corr-list-detalle">';
   Object.keys(porAnio).sort((a,b)=>a-b).forEach(anio => {
     const bloquesAnio = porAnio[anio];
     let contenido = '';
@@ -2951,8 +3016,100 @@ function rCorr() {
     </div>`;
   });
 
+  html += '</div>'; // cierre #corr-list-detalle
   if(!html) html = `<div class="empty-state"><span class="icon">🎓</span>No hay materias en esta categoría.</div>`;
   lista.innerHTML = html;
+
+  rCorrGrid(ps); // vista de grilla para pantallas grandes (no afecta la lista de arriba)
+}
+
+// ── VISTA DE CORRELATIVAS EN GRILLA (solo compu, ≥880px) ──
+// Organiza las materias en columnas por semestre (izquierda = 1er año/1er
+// semestre, derecha = último). Al pasar el mouse por una materia, se dibujan
+// líneas hacia sus correlativas: fuertes (línea sólida) y débiles (línea
+// punteada), y el resto de los cuadrados se atenúa. Tocar un cuadrado abre
+// el mismo detalle que en la lista (abrirCorrMateria), para marcarla como
+// libre, regular o aprobada.
+function rCorrGrid(ps) {
+  const cont = document.getElementById('corr-grid-desktop');
+  if (!cont) return;
+
+  const columnasHtml = PLAN.map(bloque => {
+    const aprobBloque = bloque.materias.filter(m => getEstadoCorr(ps, m.id) === 'aprobada').length;
+    const cuadrados = bloque.materias.map(m => {
+      const est = getEstadoCorr(ps, m.id);
+      const disponible = est === 'libre' && puedesCursar(m, ps);
+      const cls = est === 'aprobada' ? 'cg-aprobada' : est === 'regular' ? 'cg-regular' : disponible ? 'cg-disponible' : 'cg-bloqueada';
+      return `<div class="corr-sq ${cls}" data-id="${m.id}" onclick="abrirCorrMateria('${m.id}')" onmouseenter="hoverCorrSq('${m.id}')" onmouseleave="unhoverCorrSq()" title="${m.nombre}">
+        <span class="corr-sq-nombre">${m.nombre}</span>
+      </div>`;
+    }).join('');
+    return `<div class="corr-col">
+      <div class="corr-col-header">
+        <div class="corr-col-anio">${bloque.anio}° año</div>
+        <div class="corr-col-sem">${bloque.semestre}° sem.</div>
+        <div class="corr-col-count">${aprobBloque}/${bloque.materias.length}</div>
+      </div>
+      <div class="corr-col-sqs">${cuadrados}</div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="corr-grid-leyenda">
+      <div class="ley-item"><div class="ley-dot" style="background:var(--success);"></div>Aprobada</div>
+      <div class="ley-item"><div class="ley-dot" style="background:var(--accent7);"></div>Regular</div>
+      <div class="ley-item"><div class="ley-dot" style="background:var(--accent2);"></div>Disponible</div>
+      <div class="ley-item"><div class="ley-dot" style="background:var(--muted);"></div>Bloqueada</div>
+      <div class="ley-item" style="margin-left:auto;"><span class="corr-ley-linea fuerte"></span>Correlativa fuerte</div>
+      <div class="ley-item"><span class="corr-ley-linea debil"></span>Correlativa débil</div>
+    </div>
+    <div class="corr-grid-inner">
+      ${columnasHtml}
+      <svg class="corr-grid-svg" id="corr-grid-svg"></svg>
+    </div>`;
+}
+
+// Dibuja el "árbol" de correlativas de una materia al pasar el mouse por encima.
+function hoverCorrSq(id) {
+  const mat = getPlanMateria(id);
+  const wrap = document.querySelector('.corr-grid-inner');
+  const svg = document.getElementById('corr-grid-svg');
+  if (!mat || !wrap || !svg) return;
+
+  wrap.classList.add('hover-activo');
+  const self = wrap.querySelector(`.corr-sq[data-id="${id}"]`);
+  if (self) self.classList.add('hl-self');
+  svg.innerHTML = '';
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const centro = (el) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left - wrapRect.left + r.width / 2, y: r.top - wrapRect.top + r.height / 2 };
+  };
+
+  const dibujarLinea = (otroId, tipo) => {
+    const otro = wrap.querySelector(`.corr-sq[data-id="${otroId}"]`);
+    if (!otro || !self) return;
+    otro.classList.add(tipo === 'fuerte' ? 'hl-fuerte' : 'hl-debil');
+    const p1 = centro(self), p2 = centro(otro);
+    const linea = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    linea.setAttribute('x1', p1.x); linea.setAttribute('y1', p1.y);
+    linea.setAttribute('x2', p2.x); linea.setAttribute('y2', p2.y);
+    linea.setAttribute('class', tipo === 'fuerte' ? 'corr-linea-fuerte' : 'corr-linea-debil');
+    svg.appendChild(linea);
+  };
+
+  mat.fuertes.forEach(cid => dibujarLinea(cid, 'fuerte'));
+  mat.debiles.forEach(cid => dibujarLinea(cid, 'debil'));
+}
+
+function unhoverCorrSq() {
+  const wrap = document.querySelector('.corr-grid-inner');
+  if (!wrap) return;
+  wrap.classList.remove('hover-activo');
+  wrap.querySelectorAll('.corr-sq').forEach(el => el.classList.remove('hl-self', 'hl-fuerte', 'hl-debil'));
+  const svg = document.getElementById('corr-grid-svg');
+  if (svg) svg.innerHTML = '';
 }
 
 // ── DETALLE DE MATERIA (Correlatividades) ──
