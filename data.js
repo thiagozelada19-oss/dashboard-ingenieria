@@ -196,11 +196,20 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 11)
+//   id      → número entero único y creciente (el siguiente es 12)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 11,
+    fecha: '2026-10-02',
+    titulo: 'Tutorial de bienvenida',
+    cambios: [
+      'Quienes abran la app por primera vez ahora ven un mini tutorial explicando cada sección.',
+      'Podés volver a verlo cuando quieras desde el botón de Backup (💾).',
+    ],
+  },
   {
     id: 10,
     fecha: '2026-10-02',
@@ -292,6 +301,48 @@ const CHANGELOG = [
     cambios: [
       'Mejoramos la forma en que se guardan tus datos en el dispositivo, para reducir el riesgo de perder información.',
     ],
+  },
+];
+
+// ── TUTORIAL DE BIENVENIDA ──
+// Se muestra una sola vez, la primera vez que alguien abre la app (no a
+// usuarios que ya la venían usando). Para reordenar o cambiar el texto de
+// un paso, solo hay que editar este array — no hace falta tocar index.html.
+const TUTORIAL = [
+  {
+    emoji: '👋',
+    titulo: '¡Bienvenido!',
+    texto: 'Esta app te ayuda a organizar tus materias, tareas, exámenes y horarios de toda la carrera, en un solo lugar.',
+  },
+  {
+    emoji: '📚',
+    titulo: 'Materias y notas',
+    texto: 'Cargá tus materias con sus notas parciales. La app calcula sola si quedaste regular, promocionada o libre.',
+  },
+  {
+    emoji: '✅',
+    titulo: 'Tareas y exámenes',
+    texto: 'Anotá fechas de entrega y de parciales o finales. La app te avisa con alertas cuando se van acercando.',
+  },
+  {
+    emoji: '🍅',
+    titulo: 'Pomodoro',
+    texto: 'Estudiá con un cronómetro por materia: el tiempo se suma solo a esa materia, para llevar el control de cuánto le dedicaste.',
+  },
+  {
+    emoji: '🎓',
+    titulo: 'Correlativas y avance',
+    texto: 'Mirá qué materias podés cursar ahora según tus correlativas, y seguí tu avance en toda la carrera.',
+  },
+  {
+    emoji: '☁️',
+    titulo: 'Cuenta y amigos',
+    texto: 'Si querés, iniciá sesión con Google (☁️) para tener tus datos en todos tus dispositivos, y agregá amigos (👥) para comparar cuánto estudiaron.',
+  },
+  {
+    emoji: '🎉',
+    titulo: '¡Listo para arrancar!',
+    texto: 'Explorá las secciones desde el menú. Podés volver a ver este tutorial cuando quieras desde el botón de Backup (💾).',
   },
 ];
 

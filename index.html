@@ -170,6 +170,15 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── TUTORIAL DE BIENVENIDA ── */
+.tutorial-modal { padding-top: 32px; }
+.tutorial-emoji { font-size: 56px; text-align: center; margin-bottom: 16px; }
+.tutorial-titulo { font-size: 19px; font-weight: 800; text-align: center; margin-bottom: 10px; }
+.tutorial-texto { font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.6; padding: 0 6px; margin-bottom: 24px; }
+.tutorial-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 18px; }
+.tutorial-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; }
+.tutorial-dot.activo { background: var(--accent); width: 20px; border-radius: 4px; }
+
 /* ── AMIGOS ── */
 .amigo-codigo-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
 .amigo-codigo-row .form-input { flex: 1; min-width: 0; font-size: 11px; }
@@ -1578,6 +1587,14 @@ body {
 
 
 <!-- Modal Backup -->
+<div class="modal-overlay" id="modal-tutorial">
+  <div class="modal tutorial-modal">
+    <div id="tutorial-contenido"></div>
+    <div class="tutorial-dots" id="tutorial-dots"></div>
+    <div class="modal-btns" id="tutorial-botones"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-novedades">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1655,8 +1672,9 @@ body {
 
     <!-- Info estado actual -->
     <div id="backup-info" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-align:center;padding:8px;"></div>
-    <div style="text-align:center;margin-top:4px;">
+    <div style="text-align:center;margin-top:4px;display:flex;flex-direction:column;gap:8px;">
       <span onclick="closeModal('modal-backup'); abrirNovedades();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">🆕 Ver historial de actualizaciones</span>
+      <span onclick="closeModal('modal-backup'); abrirTutorial();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">❓ Ver tutorial de la app</span>
     </div>
 
     <div class="modal-btns" style="margin-top:12px;">
@@ -1836,11 +1854,12 @@ let state; // se inicializa de forma asíncrona en bootApp()
 // de armar el estado inicial y disparar el primer render().
 let _esInstalacionNueva = false;
 let _changelogVistoCache = null;
+let _tutorialVistoCache = null;
 
 async function bootApp() {
   await migrarDesdeLocalStorage();
 
-  const [ver, s, lastSave, planRaw, semestre, dismissed, changelogVisto] = await Promise.all([
+  const [ver, s, lastSave, planRaw, semestre, dismissed, changelogVisto, tutorialVisto] = await Promise.all([
     localforage.getItem('ing1-version'),
     localforage.getItem('ing1-state'),
     localforage.getItem('ing1-lastSave'),
@@ -1848,12 +1867,14 @@ async function bootApp() {
     localforage.getItem('ing1-semestre-actual'),
     localforage.getItem('pwa-dismissed'),
     localforage.getItem('ing1-changelog-visto'),
+    localforage.getItem('ing1-tutorial-visto'),
   ]);
 
   _lastSaveCache = lastSave || null;
   _semestreActualCache = semestre != null ? parseInt(semestre) : null;
   _pwaDismissedCache = !!dismissed;
   _changelogVistoCache = changelogVisto != null ? parseInt(changelogVisto) : null;
+  _tutorialVistoCache = tutorialVisto || null;
   _esInstalacionNueva = !s; // no había ningún estado guardado antes: instalación nueva
   try { _planStateCache = JSON.parse(planRaw || '{}'); } catch(e) { _planStateCache = {}; }
 
@@ -1932,6 +1953,61 @@ async function chequearNovedades() {
 function abrirNovedades() {
   renderNovedades(false);
   openModal('modal-novedades');
+}
+
+// ── TUTORIAL DE BIENVENIDA (primera vez) ──
+// TUTORIAL (el contenido de cada paso) vive en data.js. Se muestra una sola
+// vez, solo en instalaciones realmente nuevas (reutiliza _esInstalacionNueva,
+// la misma señal que usa chequearNovedades()). A un usuario que ya venía
+// usando la app, lo marcamos como "visto" sin mostrárselo.
+let tutorialPaso = 0;
+
+async function chequearTutorial() {
+  if (_tutorialVistoCache) return;
+  if (_esInstalacionNueva) abrirTutorial();
+  _tutorialVistoCache = '1';
+  localforage.setItem('ing1-tutorial-visto', '1').catch(()=>{});
+}
+
+function abrirTutorial() {
+  tutorialPaso = 0;
+  renderTutorial();
+  openModal('modal-tutorial');
+}
+
+function tutorialIrA(i) {
+  if (!TUTORIAL || i < 0 || i >= TUTORIAL.length) return;
+  tutorialPaso = i;
+  renderTutorial();
+}
+function tutorialSiguiente() { tutorialIrA(tutorialPaso + 1); }
+function tutorialAnterior()  { tutorialIrA(tutorialPaso - 1); }
+function tutorialFinalizar() { closeModal('modal-tutorial'); }
+
+function renderTutorial() {
+  if (!TUTORIAL || !TUTORIAL.length) return;
+  const paso = TUTORIAL[tutorialPaso];
+  const cont = document.getElementById('tutorial-contenido');
+  const dots = document.getElementById('tutorial-dots');
+  const botones = document.getElementById('tutorial-botones');
+  if (!cont || !dots || !botones || !paso) return;
+
+  cont.innerHTML = `
+    <div class="tutorial-emoji">${paso.emoji}</div>
+    <div class="tutorial-titulo">${paso.titulo}</div>
+    <div class="tutorial-texto">${paso.texto}</div>`;
+
+  dots.innerHTML = TUTORIAL.map((_, i) =>
+    `<div class="tutorial-dot${i === tutorialPaso ? ' activo' : ''}" onclick="tutorialIrA(${i})"></div>`
+  ).join('');
+
+  const esPrimero = tutorialPaso === 0;
+  const esUltimo  = tutorialPaso === TUTORIAL.length - 1;
+  botones.innerHTML = `
+    ${esPrimero
+      ? `<button class="mbtn mbtn-cancel" onclick="tutorialFinalizar()">Saltar</button>`
+      : `<button class="mbtn mbtn-cancel" onclick="tutorialAnterior()">← Atrás</button>`}
+    <button class="mbtn mbtn-ok" onclick="${esUltimo ? 'tutorialFinalizar()' : 'tutorialSiguiente()'}">${esUltimo ? '¡Empezar! 🚀' : 'Siguiente →'}</button>`;
 }
 
 // ── SINCRONIZACIÓN CON LA NUBE (Firebase Auth + Firestore) ──
@@ -4445,6 +4521,7 @@ bootApp().then(async () => {
   render();
   const boot = document.getElementById('boot-loading');
   if (boot) boot.remove();
+  await chequearTutorial();
   chequearNovedades();
   await restaurarPomodoroAlArrancar();
 }).catch(err => {
