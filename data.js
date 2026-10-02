@@ -196,11 +196,21 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 10)
+//   id      → número entero único y creciente (el siguiente es 11)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 10,
+    fecha: '2026-10-02',
+    titulo: 'Nueva sección: Amigos',
+    cambios: [
+      'Nueva pestaña 👥 Amigos: compartí tu código (o un link) para agregar a tus compañeros.',
+      'Comparen horas totales de estudio, horas por materia, avance de la carrera y un ranking de quién estudió más esta semana.',
+      'Tus notas, tareas y exámenes nunca se comparten — solo ese resumen, y únicamente con quienes acepten ser tus amigos.',
+    ],
+  },
   {
     id: 9,
     fecha: '2026-10-02',

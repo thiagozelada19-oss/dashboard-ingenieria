@@ -170,6 +170,35 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── AMIGOS ── */
+.amigo-codigo-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.amigo-codigo-row .form-input { flex: 1; min-width: 0; font-size: 11px; }
+.amigo-codigo-row .mbtn { flex-shrink: 0; padding: 10px 14px; }
+.amigo-codigo-row #mi-codigo-amigo { font-family: 'Space Mono', monospace; color: var(--muted); }
+
+.amigo-solicitud-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.amigo-solicitud-row:last-child { border-bottom: none; }
+.amigo-solicitud-nombre { font-size: 13px; font-weight: 600; }
+
+.amigo-ranking-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.amigo-ranking-row:last-child { border-bottom: none; }
+.amigo-ranking-row.soy-yo { background: rgba(94,234,212,0.06); border-radius: 10px; padding-left: 8px; padding-right: 8px; margin: 0 -8px; }
+.amigo-ranking-pos { font-size: 15px; font-weight: 800; width: 28px; flex-shrink: 0; font-family: 'Space Mono', monospace; }
+.amigo-ranking-nombre { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.amigo-ranking-tiempo { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+.amigo-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.amigo-foto, .amigo-foto-placeholder { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.amigo-foto { object-fit: cover; }
+.amigo-foto-placeholder { background: var(--panel2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.amigo-card-nombre { flex: 1; font-size: 14px; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.amigo-quitar { background: none; border: none; color: var(--muted); font-size: 15px; cursor: pointer; padding: 4px 6px; flex-shrink: 0; }
+.amigo-quitar:hover { color: var(--danger); }
+
+.amigo-materias-detalle { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.amigo-materia-item { display: flex; justify-content: space-between; font-size: 11.5px; padding: 4px 0; color: var(--muted); }
+.amigo-materia-item span:first-child { color: var(--text); }
+
 /* ── POMODORO ── */
 .pomo-activo { text-align: center; }
 .pomo-fase { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
@@ -1245,6 +1274,11 @@ body {
     <div id="pomodoro-content"></div>
   </section>
 
+  <!-- AMIGOS -->
+  <section id="sec-amigos" class="section">
+    <div id="amigos-content"></div>
+  </section>
+
   <!-- Detalle de mes (Calendario académico) -->
   <div class="modal-overlay" id="modal-cal-mes">
     <div class="modal">
@@ -1306,6 +1340,10 @@ body {
   <button class="nav-item" onclick="showSec('cal',this)">
     <span class="nav-icon">🗒️</span>
     <span class="nav-label">Académ.</span>
+  </button>
+  <button class="nav-item" onclick="showSec('amigos',this)">
+    <span class="nav-icon">👥</span>
+    <span class="nav-label">Amigos</span>
   </button>
 </nav>
 
@@ -2004,11 +2042,16 @@ async function conectarSync(user) {
     console.error('[sync] Error en listener:', err);
     actualizarEstadoSync('⚠️ Se perdió la conexión con la nube');
   });
+
+  iniciarListenersAmigos();
+  chequearParametroAmigo();
 }
 
 function desconectarSync() {
   _uid = null;
   if (_firestoreUnsub) { _firestoreUnsub(); _firestoreUnsub = null; }
+  detenerListenersAmigos();
+  rAmigos();
 }
 
 function aplicarDatosRemotos(d) {
@@ -2048,6 +2091,7 @@ async function pushRemotoAhora() {
     console.error('[sync] Error al subir datos:', e);
     actualizarEstadoSync('⚠️ No se pudo subir (revisá tu conexión)');
   }
+  sincronizarPerfilPublico(); // actualiza el resumen que ven tus amigos (horas, avance)
 }
 
 const HORAS = ['07','08','09','10','11','12','13','14','15','16','17','18','19','20'];
@@ -2140,7 +2184,7 @@ function actualizarAlertas() {
 }
 
 // ── SECTIONS ──
-const subs = {materias:'MATERIAS Y NOTAS',tareas:'TAREAS · ENTREGAS',examenes:'CALENDARIO · EXÁMENES',horario:'HORARIO SEMANAL',pomodoro:'POMODORO · TIEMPO DE ESTUDIO',avance:'MI AVANCE',corr:'CORRELATIVIDADES',cal:'CALENDARIO ACADÉMICO 2026-27'};
+const subs = {materias:'MATERIAS Y NOTAS',tareas:'TAREAS · ENTREGAS',examenes:'CALENDARIO · EXÁMENES',horario:'HORARIO SEMANAL',pomodoro:'POMODORO · TIEMPO DE ESTUDIO',avance:'MI AVANCE',corr:'CORRELATIVIDADES',cal:'CALENDARIO ACADÉMICO 2026-27',amigos:'AMIGOS · COMPARAR AVANCE'};
 
 function showSec(sec, btn){
   curSec = sec;
@@ -2160,7 +2204,7 @@ function fabAction(){
 }
 
 // ── RENDER ──
-function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rPomodoro(); rAvance(); rCorr(); rTimeline(); rCal(); fillSelects(); actualizarAlertas(); }
+function render(){ rMaterias(); rTareas(); rExamenes(); rHorario(); rPomodoro(); rAvance(); rCorr(); rTimeline(); rCal(); rAmigos(); fillSelects(); actualizarAlertas(); }
 
 let mostrarArchivadas = false;
 
@@ -3538,6 +3582,320 @@ function actualizarMiniPomodoro() {
   if (materiaEl) materiaEl.textContent = (mat ? mat.nombre : '—') + (pomodoroEstado.fase === 'descanso' ? ' · descanso' : '');
   if (tiempoEl) tiempoEl.textContent = fmtMMSS(segundosRestantesPomodoro());
   if (toggleEl) toggleEl.textContent = pomodoroEstado.pausado ? '▶️' : '⏸️';
+}
+
+// ── AMIGOS: comparar horas de estudio y avance ──
+// Modelo de datos (en Firestore, solo si hay sesión iniciada):
+//  - /perfiles/{uid}: resumen PÚBLICO de cada usuario (nombre, foto, horas
+//    totales, horas de esta semana, horas por materia, materias aprobadas).
+//    NUNCA incluye notas, tareas ni exámenes — eso sigue siendo privado en
+//    /usuarios/{uid}, que nadie más puede leer.
+//  - /amistades/{uidA_uidB}: una amistad entre dos usuarios (ordenados
+//    alfabéticamente), con estado 'pendiente' o 'aceptada'. Según las reglas
+//    de seguridad, solo se puede LEER el perfil de alguien si sos vos mismo
+//    o si la amistad entre ambos está 'aceptada'.
+let _amistadesCacheA = [];
+let _amistadesCacheB = [];
+let amistadesUnsub = null;           // [unsubA, unsubB]
+let _amigosAceptadosUids = [];
+let _solicitudesRecibidas = [];
+let _solicitudesEnviadas = [];
+let _perfilesAmigosUnsub = {};       // uid -> función para dejar de escuchar
+let _perfilesAmigosData = {};        // uid -> último perfil recibido
+let _nombresCache = {};              // uid -> nombre (para solicitudes, con caché)
+let _parametroAmigoChequeado = false;
+
+function pairKeyAmistad(uidA, uidB) { return [uidA, uidB].sort().join('_'); }
+
+// Sube a /perfiles/{uid} el resumen que pueden ver tus amigos: horas totales,
+// horas de esta semana, horas por materia y cantidad de materias aprobadas.
+// Nunca sube notas, tareas ni exámenes.
+async function sincronizarPerfilPublico() {
+  if (!_uid || !db) return;
+  try {
+    const ps = getPlanState();
+    const avanceAprobadas = PLAN_FLAT.filter(m => ps[m.id] === 'aprobada').length;
+    const materiasResumen = state.materias
+      .filter(m => (m.minutosEstudio || 0) > 0)
+      .map(m => ({ nombre: m.nombre, minutosEstudio: m.minutosEstudio || 0 }));
+    const totalMinutos = state.materias.reduce((a, m) => a + (m.minutosEstudio || 0), 0);
+    const user = firebase.auth().currentUser;
+    await db.collection('perfiles').doc(_uid).set({
+      nombre: (user && user.displayName) || 'Sin nombre',
+      foto: (user && user.photoURL) || '',
+      actualizado: firebase.firestore.FieldValue.serverTimestamp(),
+      totalMinutos,
+      semanaMinutos: minutosEstudioEstaSemana(),
+      materias: materiasResumen,
+      avanceAprobadas,
+    }, { merge: true });
+  } catch(e) { console.warn('[amigos] No se pudo sincronizar el perfil público:', e); }
+}
+
+function iniciarListenersAmigos() {
+  detenerListenersAmigos();
+  if (!_uid || !db) return;
+  amistadesUnsub = [
+    db.collection('amistades').where('uidA','==',_uid).onSnapshot(snap => {
+      _amistadesCacheA = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      procesarAmistades();
+    }, e => console.warn('[amigos] listener A:', e)),
+    db.collection('amistades').where('uidB','==',_uid).onSnapshot(snap => {
+      _amistadesCacheB = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      procesarAmistades();
+    }, e => console.warn('[amigos] listener B:', e)),
+  ];
+}
+
+function detenerListenersAmigos() {
+  if (amistadesUnsub) { amistadesUnsub.forEach(u => u && u()); amistadesUnsub = null; }
+  Object.values(_perfilesAmigosUnsub).forEach(u => u && u());
+  _perfilesAmigosUnsub = {};
+  _perfilesAmigosData = {};
+  _amigosAceptadosUids = []; _solicitudesRecibidas = []; _solicitudesEnviadas = [];
+  _amistadesCacheA = []; _amistadesCacheB = [];
+}
+
+function procesarAmistades() {
+  const todas = [..._amistadesCacheA, ..._amistadesCacheB];
+  const aceptadas = [], recibidas = [], enviadas = [];
+  todas.forEach(a => {
+    const otroUid = a.uidA === _uid ? a.uidB : a.uidA;
+    if (a.estado === 'aceptada') aceptadas.push(otroUid);
+    else if (a.estado === 'pendiente') {
+      if (a.solicitante === _uid) enviadas.push(otroUid);
+      else recibidas.push(otroUid);
+    }
+  });
+  _amigosAceptadosUids = aceptadas;
+  _solicitudesRecibidas = recibidas;
+  _solicitudesEnviadas = enviadas;
+  actualizarListenersPerfilesAmigos();
+  rAmigos();
+}
+
+// Mantiene un listener en tiempo real por cada amigo confirmado (y solo esos).
+function actualizarListenersPerfilesAmigos() {
+  Object.keys(_perfilesAmigosUnsub).forEach(uid => {
+    if (!_amigosAceptadosUids.includes(uid)) {
+      _perfilesAmigosUnsub[uid]();
+      delete _perfilesAmigosUnsub[uid];
+      delete _perfilesAmigosData[uid];
+    }
+  });
+  _amigosAceptadosUids.forEach(uid => {
+    if (_perfilesAmigosUnsub[uid]) return;
+    _perfilesAmigosUnsub[uid] = db.collection('perfiles').doc(uid).onSnapshot(snap => {
+      _perfilesAmigosData[uid] = snap.exists ? snap.data() : null;
+      rAmigos();
+    }, e => console.warn('[amigos] perfil de', uid, e));
+  });
+}
+
+async function agregarAmigoPorCodigo(codigoIngresado) {
+  const codigo = (codigoIngresado || '').trim();
+  if (!_uid) { showToast('⚠️ Iniciá sesión primero'); return; }
+  if (!codigo) { showToast('⚠️ Pegá el código de tu amigo'); return; }
+  if (codigo === _uid) { showToast('⚠️ Ese es tu propio código 😅'); return; }
+
+  const key = pairKeyAmistad(_uid, codigo);
+  const ref = db.collection('amistades').doc(key);
+  try {
+    const snap = await ref.get();
+    if (snap.exists) {
+      const d = snap.data();
+      if (d.estado === 'aceptada') { showToast('✅ Ya son amigos'); return; }
+      if (d.solicitante === _uid) { showToast('⏳ Ya le mandaste una solicitud, esperá a que la acepte'); return; }
+      await ref.update({ estado: 'aceptada' });
+      showToast('🎉 ¡Ahora son amigos!');
+      return;
+    }
+    await ref.set({
+      uidA: [_uid, codigo].sort()[0],
+      uidB: [_uid, codigo].sort()[1],
+      solicitante: _uid,
+      estado: 'pendiente',
+      creado: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    showToast('📨 Solicitud enviada');
+    const input = document.getElementById('agregar-amigo-input');
+    if (input) input.value = '';
+  } catch(e) {
+    console.error('[amigos] Error al agregar:', e);
+    showToast('❌ No se pudo agregar. ¿El código es correcto?');
+  }
+}
+
+async function aceptarSolicitud(otroUid) {
+  if (!_uid) return;
+  try {
+    await db.collection('amistades').doc(pairKeyAmistad(_uid, otroUid)).update({ estado: 'aceptada' });
+    showToast('🎉 ¡Ahora son amigos!');
+  } catch(e) { showToast('❌ No se pudo aceptar la solicitud'); }
+}
+
+async function eliminarAmistad(otroUid) {
+  if (!_uid) return;
+  if (!confirm('¿Eliminar esta amistad?')) return;
+  try {
+    await db.collection('amistades').doc(pairKeyAmistad(_uid, otroUid)).delete();
+    showToast('🗑️ Amistad eliminada');
+  } catch(e) { showToast('❌ No se pudo eliminar'); }
+}
+
+// Nombre de un usuario por uid, con caché simple + re-render cuando llega.
+function nombreDeUid(uid) {
+  if (_nombresCache[uid]) return _nombresCache[uid];
+  _nombresCache[uid] = 'Cargando...';
+  db.collection('perfiles').doc(uid).get().then(snap => {
+    _nombresCache[uid] = snap.exists ? (snap.data().nombre || 'Usuario') : 'Usuario';
+    rAmigos();
+  }).catch(() => { _nombresCache[uid] = 'Usuario'; });
+  return _nombresCache[uid];
+}
+
+function copiarCodigoAmigo() {
+  if (!_uid) return;
+  const ok = () => showToast('📋 Código copiado');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(_uid).then(ok).catch(() => {
+      const input = document.getElementById('mi-codigo-amigo');
+      if (input) { input.select(); document.execCommand('copy'); ok(); }
+    });
+  } else {
+    const input = document.getElementById('mi-codigo-amigo');
+    if (input) { input.select(); document.execCommand('copy'); ok(); }
+  }
+}
+
+function compartirCodigoAmigo() {
+  if (!_uid) return;
+  const url = `${location.origin}${location.pathname}?amigo=${_uid}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Agregame en Ing. Mecatrónica', text: 'Agregame como amigo para comparar el estudio', url }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast('🔗 Link copiado')).catch(() => {});
+  }
+}
+
+// Si se abrió la app desde un link "?amigo=UID" compartido por alguien,
+// ofrece agregarlo automáticamente (una sola vez por carga de página).
+function chequearParametroAmigo() {
+  if (_parametroAmigoChequeado) return;
+  _parametroAmigoChequeado = true;
+  try {
+    const params = new URLSearchParams(location.search);
+    const amigoUid = params.get('amigo');
+    if (amigoUid && _uid && amigoUid !== _uid) {
+      if (confirm('¿Agregar a este usuario como amigo?')) agregarAmigoPorCodigo(amigoUid);
+      params.delete('amigo');
+      const nuevaUrl = location.pathname + (params.toString() ? '?' + params.toString() : '');
+      history.replaceState({}, '', nuevaUrl);
+    }
+  } catch(e) {}
+}
+
+function rAmigos() {
+  const cont = document.getElementById('amigos-content');
+  if (!cont) return;
+
+  if (!_uid) {
+    cont.innerHTML = `<div class="card" style="text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px;">👥</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+        Iniciá sesión con Google para agregar amigos y comparar horas de estudio y avance.
+      </div>
+      <button class="mbtn mbtn-ok" onclick="openModal('modal-cuenta')">🔐 Iniciar sesión</button>
+    </div>`;
+    return;
+  }
+
+  let html = `<div class="card">
+    <div class="form-label" style="margin-bottom:6px;">TU CÓDIGO DE AMIGO</div>
+    <div class="amigo-codigo-row">
+      <input class="form-input" id="mi-codigo-amigo" readonly value="${_uid}">
+      <button class="mbtn mbtn-cancel" onclick="copiarCodigoAmigo()" title="Copiar">📋</button>
+      <button class="mbtn mbtn-cancel" onclick="compartirCodigoAmigo()" title="Compartir link">📤</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--muted);margin:10px 0 8px;">Compartí este código (o el link) con tu amigo. Cuando los dos se agreguen mutuamente, o vos aceptes su solicitud, van a poder comparar su avance.</div>
+    <div class="amigo-codigo-row">
+      <input class="form-input" id="agregar-amigo-input" placeholder="Pegá acá el código de tu amigo">
+      <button class="mbtn mbtn-ok" onclick="agregarAmigoPorCodigo(document.getElementById('agregar-amigo-input').value)">Agregar</button>
+    </div>
+  </div>`;
+
+  if (_solicitudesRecibidas.length) {
+    html += `<div class="card">
+      <div class="pomo-resumen-titulo">📨 Solicitudes recibidas</div>
+      ${_solicitudesRecibidas.map(uid => `
+        <div class="amigo-solicitud-row">
+          <div class="amigo-solicitud-nombre">${nombreDeUid(uid)}</div>
+          <button class="mbtn mbtn-ok" style="padding:8px 14px;" onclick="aceptarSolicitud('${uid}')">Aceptar</button>
+        </div>`).join('')}
+    </div>`;
+  }
+  if (_solicitudesEnviadas.length) {
+    html += `<div class="card">
+      <div class="pomo-resumen-titulo">⏳ Esperando que te acepten</div>
+      ${_solicitudesEnviadas.map(uid => `<div class="amigo-solicitud-row"><div class="amigo-solicitud-nombre">${nombreDeUid(uid)}</div></div>`).join('')}
+    </div>`;
+  }
+
+  const ps = getPlanState();
+  const misAprobadas = PLAN_FLAT.filter(m => ps[m.id] === 'aprobada').length;
+  const misStats = {
+    uid: _uid, soyYo: true, nombre: 'Vos',
+    totalMinutos: state.materias.reduce((a,m) => a + (m.minutosEstudio||0), 0),
+    semanaMinutos: minutosEstudioEstaSemana(),
+    avanceAprobadas: misAprobadas,
+    materias: state.materias.filter(m => (m.minutosEstudio||0) > 0).map(m => ({nombre:m.nombre, minutosEstudio:m.minutosEstudio})),
+  };
+  const amigosStats = _amigosAceptadosUids.map(uid => {
+    const d = _perfilesAmigosData[uid];
+    if (!d) return null;
+    return { uid, soyYo:false, nombre: d.nombre || 'Usuario', foto: d.foto,
+             totalMinutos: d.totalMinutos||0, semanaMinutos: d.semanaMinutos||0,
+             avanceAprobadas: d.avanceAprobadas||0, materias: d.materias||[] };
+  }).filter(Boolean);
+
+  const ranking = [misStats, ...amigosStats].sort((a,b) => b.semanaMinutos - a.semanaMinutos);
+  const medallas = ['🥇','🥈','🥉'];
+  html += `<div class="card">
+    <div class="pomo-resumen-titulo">🏆 Ranking de esta semana</div>
+    ${ranking.map((p,i) => `
+      <div class="amigo-ranking-row${p.soyYo ? ' soy-yo' : ''}">
+        <div class="amigo-ranking-pos">${medallas[i] || (i+1) + '°'}</div>
+        <div class="amigo-ranking-nombre">${p.nombre}${p.soyYo ? ' (vos)' : ''}</div>
+        <div class="amigo-ranking-tiempo">${fmtHorasMin(p.semanaMinutos)}</div>
+      </div>`).join('')}
+  </div>`;
+
+  if (amigosStats.length) {
+    const totalPlan = PLAN_FLAT.length;
+    html += amigosStats.map(a => {
+      const pctAvance = totalPlan ? Math.round((a.avanceAprobadas / totalPlan) * 100) : 0;
+      const detalleMaterias = [...a.materias].sort((x,y) => y.minutosEstudio - x.minutosEstudio).slice(0, 6);
+      return `<div class="card">
+        <div class="amigo-card-header">
+          ${a.foto ? `<img src="${a.foto}" class="amigo-foto" onerror="this.style.display='none'">` : `<div class="amigo-foto-placeholder">👤</div>`}
+          <div class="amigo-card-nombre">${a.nombre}</div>
+          <button class="amigo-quitar" onclick="eliminarAmistad('${a.uid}')" title="Eliminar amistad">✕</button>
+        </div>
+        <div class="stat-row-3">
+          <div class="stat-box"><div class="stat-icon">⏱️</div><div class="stat-num pomo-stat-num">${fmtHorasMin(a.totalMinutos)}</div><div class="stat-lbl">Total</div></div>
+          <div class="stat-box"><div class="stat-icon">🗓️</div><div class="stat-num pomo-stat-num">${fmtHorasMin(a.semanaMinutos)}</div><div class="stat-lbl">Esta semana</div></div>
+          <div class="stat-box"><div class="stat-icon">🎓</div><div class="stat-num pomo-stat-num">${pctAvance}%</div><div class="stat-lbl">Avance</div></div>
+        </div>
+        ${detalleMaterias.length ? `<div class="amigo-materias-detalle">
+          ${detalleMaterias.map(m => `<div class="amigo-materia-item"><span>${m.nombre}</span><span>${fmtHorasMin(m.minutosEstudio)}</span></div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  } else if (!_solicitudesRecibidas.length && !_solicitudesEnviadas.length) {
+    html += `<div class="empty-state"><span class="icon">👥</span>Todavía no agregaste amigos. Compartí tu código para empezar.</div>`;
+  }
+
+  cont.innerHTML = html;
 }
 
 // ── DETALLE DE MATERIA (Correlatividades) ──
