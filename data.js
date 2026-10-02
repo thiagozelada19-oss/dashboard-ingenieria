@@ -196,11 +196,19 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 12)
+//   id      → número entero único y creciente (el siguiente es 13)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 12,
+    fecha: '2026-10-02',
+    titulo: 'Arreglo: amigos que no aparecían en la lista',
+    cambios: [
+      'Corregimos un problema por el que un amigo que ya tenía la app con sesión iniciada de antes no aparecía en tu lista hasta que editaba algo. Ahora queda visible apenas abre la app.',
+    ],
+  },
   {
     id: 11,
     fecha: '2026-10-02',

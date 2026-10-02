@@ -2108,6 +2108,12 @@ async function conectarSync(user) {
     actualizarEstadoSync('⚠️ No se pudo sincronizar (revisá tu conexión)');
   }
 
+  // Siempre actualizamos el resumen público (horas, avance) al iniciar sesión,
+  // independientemente de si hubo que subir o bajar datos arriba — así un
+  // amigo que simplemente abre la app (sin editar nada) igual queda visible
+  // para sus amigos, en vez de aparecer recién cuando guarda algún cambio.
+  await sincronizarPerfilPublico();
+
   if (_firestoreUnsub) _firestoreUnsub();
   _firestoreUnsub = ref.onSnapshot(snap => {
     if (!snap.exists || snap.metadata.hasPendingWrites) return; // ignora el eco del propio dispositivo
