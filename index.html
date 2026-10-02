@@ -185,7 +185,9 @@ body {
 .pomo-resumen-nombre { font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
 .pomo-resumen-barra-wrap { background: var(--panel2); border-radius: 8px; height: 7px; overflow: hidden; margin-bottom: 4px; }
 .pomo-resumen-barra { height: 100%; background: var(--accent); border-radius: 8px; transition: width 0.3s; }
+.pomo-resumen-barra.cumplida { background: var(--success); }
 .pomo-resumen-tiempo { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+.pomo-stat-num { font-size: 16px !important; }
 
 /* Píldora flotante: visible en cualquier sección mientras corre una sesión */
 .pomo-mini {
@@ -575,6 +577,7 @@ body {
 
 /* ── AVANCE ── */
 .stat-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.stat-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
 .stat-box {
   background:var(--panel); border:1px solid var(--border);
   border-radius:18px; padding:16px;
@@ -1371,6 +1374,13 @@ body {
           💡 Auto: ambos parciales ≥ 60 → Regular · Promocionada: solo nota final
         </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">META DE HORAS DE ESTUDIO (opcional)</label>
+      <input class="form-input" id="m-meta-horas" type="number" min="0" step="1" placeholder="Ej: 20">
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:5px;">
+        🎯 Se usa en Pomodoro para mostrar tu progreso hacia esa meta
+      </div>
+    </div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-materia')">Cancelar</button>
       <button class="mbtn mbtn-ok" onclick="guardarMateria()">Guardar</button>
@@ -1666,6 +1676,7 @@ const DEFAULT_STATE = {
   tareas: [],
   examenes: [],
   horario: [],
+  estudioLog: {}, // { 'AAAA-MM-DD': { [materiaId]: minutosEseDia } } — ver sumarMinutosEstudio()
 };
 
 // ── ALMACENAMIENTO ──
@@ -1739,6 +1750,7 @@ function importarDatos(input) {
       // Migración de seguridad
       state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando', minutosEstudio: m.minutosEstudio || 0}));
       if (!state.examenes) state.examenes = [];
+      if (!state.estudioLog) state.estudioLog = {};
       saveState();
       // Restaurar planState (correlativas)
       if (data.planState) savePlanState(data.planState);
@@ -1814,8 +1826,9 @@ async function bootApp() {
 
   // Migrar materias viejas que no tengan estado ni minutos de estudio
   state.materias = state.materias.map(m => ({...m, estado: m.estado || 'cursando', minutosEstudio: m.minutosEstudio || 0}));
-  // Migrar examenes si no existen
+  // Migrar examenes y registro de estudio si no existen
   if (!state.examenes) state.examenes = JSON.parse(JSON.stringify(DEFAULT_STATE.examenes));
+  if (!state.estudioLog) state.estudioLog = {};
 }
 
 // ── NOVEDADES / HISTORIAL DE ACTUALIZACIONES ──
@@ -3296,14 +3309,57 @@ function tickPomodoro() {
 
 // silencioso=true → no suena ni muestra cartel (se usa al "ponerse al día"
 // después de haber tenido la app cerrada).
+// Suma minutos de estudio a una materia, tanto al total histórico
+// (mat.minutosEstudio) como al registro del día de hoy (state.estudioLog),
+// para poder mostrar "hoy / ayer / esta semana" en la sección Pomodoro.
+function sumarMinutosEstudio(materiaId, minutos) {
+  if (!minutos || minutos <= 0) return;
+  const mat = getM(materiaId);
+  if (!mat) return;
+  mat.minutosEstudio = (mat.minutosEstudio || 0) + minutos;
+  const hoy = new Date();
+  const key = calKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  if (!state.estudioLog) state.estudioLog = {};
+  if (!state.estudioLog[key]) state.estudioLog[key] = {};
+  state.estudioLog[key][materiaId] = (state.estudioLog[key][materiaId] || 0) + minutos;
+  saveState();
+}
+
+function minutosEstudioEnFecha(key) {
+  const dia = state.estudioLog && state.estudioLog[key];
+  if (!dia) return 0;
+  return Object.values(dia).reduce((a,b) => a + b, 0);
+}
+function minutosEstudioHoy() {
+  const d = new Date();
+  return minutosEstudioEnFecha(calKey(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+function minutosEstudioAyer() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return minutosEstudioEnFecha(calKey(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+function minutosEstudioEstaSemana() {
+  // Semana actual de lunes a hoy
+  const hoy = new Date();
+  const diaSemana = hoy.getDay(); // 0=domingo,1=lunes,...,6=sábado
+  const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  let total = 0;
+  for (let i = 0; i <= diasDesdeLunes; i++) {
+    const d = new Date(hoy); d.setDate(hoy.getDate() - i);
+    total += minutosEstudioEnFecha(calKey(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  return total;
+}
+function fmtHorasMin(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h <= 0) return `${m}min`;
+  return `${h}h ${m}min`;
+}
+
 function finalizarFasePomodoro(silencioso) {
   if (!pomodoroEstado) return;
   if (pomodoroEstado.fase === 'trabajo') {
-    const mat = getM(pomodoroEstado.materiaId);
-    if (mat) {
-      mat.minutosEstudio = (mat.minutosEstudio || 0) + pomodoroEstado.trabajoMin;
-      saveState();
-    }
+    sumarMinutosEstudio(pomodoroEstado.materiaId, pomodoroEstado.trabajoMin);
     pomodoroEstado.ciclos++;
     pomodoroEstado.fase = 'descanso';
     pomodoroEstado.duracionSeg = pomodoroEstado.descansoMin * 60;
@@ -3358,8 +3414,7 @@ function pomodoroDetener() {
     const minutos = Math.round(transcurridoSeg / 60);
     const mat = getM(pomodoroEstado.materiaId);
     if (minutos > 0 && mat) {
-      mat.minutosEstudio = (mat.minutosEstudio || 0) + minutos;
-      saveState();
+      sumarMinutosEstudio(pomodoroEstado.materiaId, minutos);
       showToast(`⏹️ Sesión detenida. Se sumaron ${minutos} min a ${mat.nombre}`);
     } else {
       showToast('⏹️ Sesión detenida');
@@ -3428,19 +3483,40 @@ function rPomodoro() {
       </div>`;
   }
 
+  // Historial: cuánto se estudió hoy, ayer y en lo que va de esta semana
+  html += `<div class="stat-row-3">
+    <div class="stat-box">
+      <div class="stat-icon">📖</div>
+      <div class="stat-num pomo-stat-num">${fmtHorasMin(minutosEstudioHoy())}</div>
+      <div class="stat-lbl">Hoy</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">📅</div>
+      <div class="stat-num pomo-stat-num">${fmtHorasMin(minutosEstudioAyer())}</div>
+      <div class="stat-lbl">Ayer</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🗓️</div>
+      <div class="stat-num pomo-stat-num">${fmtHorasMin(minutosEstudioEstaSemana())}</div>
+      <div class="stat-lbl">Esta semana</div>
+    </div>
+  </div>`;
+
   const conTiempo = state.materias.filter(m => (m.minutosEstudio || 0) > 0).sort((a,b) => (b.minutosEstudio||0) - (a.minutosEstudio||0));
   if (conTiempo.length) {
     const maxMin = Math.max(...conTiempo.map(m => m.minutosEstudio || 0), 1);
     html += `<div class="card">
       <div class="pomo-resumen-titulo">⏱️ Horas de estudio acumuladas</div>
       ${conTiempo.map(m => {
-        const horas = Math.floor((m.minutosEstudio||0) / 60);
-        const mins = (m.minutosEstudio||0) % 60;
-        const pct = Math.round(((m.minutosEstudio||0) / maxMin) * 100);
+        const tieneMeta = (m.metaMinutos || 0) > 0;
+        const cumplida = tieneMeta && (m.minutosEstudio||0) >= m.metaMinutos;
+        const pct = tieneMeta
+          ? Math.min(100, Math.round(((m.minutosEstudio||0) / m.metaMinutos) * 100))
+          : Math.round(((m.minutosEstudio||0) / maxMin) * 100);
         return `<div class="pomo-resumen-item">
-          <div class="pomo-resumen-nombre">${m.nombre}</div>
-          <div class="pomo-resumen-barra-wrap"><div class="pomo-resumen-barra" style="width:${pct}%;"></div></div>
-          <div class="pomo-resumen-tiempo">${horas > 0 ? horas + 'h ' : ''}${mins}min</div>
+          <div class="pomo-resumen-nombre">${m.nombre}${cumplida ? ' 🎉' : ''}</div>
+          <div class="pomo-resumen-barra-wrap"><div class="pomo-resumen-barra${cumplida ? ' cumplida' : ''}" style="width:${pct}%;"></div></div>
+          <div class="pomo-resumen-tiempo">${fmtHorasMin(m.minutosEstudio||0)}${tieneMeta ? ` / meta: ${Math.round(m.metaMinutos/60)}h` : ''}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -3668,6 +3744,10 @@ function guardarMateria(){
   // (si no, se perderían cada vez que se edita el nombre o la nota).
   const minutosPrevios = editingMateriaId ? (getM(editingMateriaId)?.minutosEstudio || 0) : 0;
 
+  const metaHorasVal = document.getElementById('m-meta-horas').value;
+  const metaMinutos = metaHorasVal !== '' && !isNaN(metaHorasVal) && +metaHorasVal > 0
+    ? Math.round(+metaHorasVal * 60) : null;
+
   const obj = {
     id:     editingMateriaId || Date.now(),
     nombre,
@@ -3675,6 +3755,7 @@ function guardarMateria(){
     color:  document.getElementById('m-color').value,
     n1, n2, nf, estado,
     minutosEstudio: minutosPrevios,
+    metaMinutos,
   };
 
   if(editingMateriaId){
@@ -3684,7 +3765,7 @@ function guardarMateria(){
     state.materias.push(obj);
     showToast('✅ Materia agregada');
   }
-  ['m-nombre','m-codigo','m-n1','m-n2','m-nf'].forEach(id => document.getElementById(id).value = '');
+  ['m-nombre','m-codigo','m-n1','m-n2','m-nf','m-meta-horas'].forEach(id => document.getElementById(id).value = '');
   closeModal('modal-materia');
   saveState();
   render();
@@ -3703,6 +3784,7 @@ window.editarMateria=function(id){
   document.getElementById('m-n2').value=m.n2??'';
   document.getElementById('m-nf').value=m.nf??'';
   document.getElementById('m-estado').value=m.estado||'cursando';
+  document.getElementById('m-meta-horas').value = m.metaMinutos ? (m.metaMinutos/60) : '';
   onEstadoChange();
   openModal('modal-materia');
 };
