@@ -196,11 +196,20 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 13)
+//   id      → número entero único y creciente (el siguiente es 14)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 13,
+    fecha: '2026-10-03',
+    titulo: 'Notificaciones',
+    cambios: [
+      'Nueva sección 🔔 Notificaciones (dentro de Backup) para activar avisos de tareas y exámenes próximos, tu horario de cursada, y cuando un amigo te supere estudiando en la semana.',
+      'Funcionan mientras tengas la app abierta (en primer o segundo plano) — no llegan si la cerrás del todo.',
+    ],
+  },
   {
     id: 12,
     fecha: '2026-10-02',

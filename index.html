@@ -170,6 +170,16 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── NOTIFICACIONES ── */
+.notif-opcion-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); }
+.notif-opcion-row:last-child { border-bottom: none; }
+.toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; cursor: pointer; background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; transition: 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; top: 50%; transform: translateY(-50%); background: var(--muted); border-radius: 50%; transition: 0.2s; }
+.toggle-switch input:checked + .toggle-slider { background: rgba(94,234,212,0.15); border-color: var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before { background: var(--accent); transform: translate(18px, -50%); }
+
 /* ── TUTORIAL DE BIENVENIDA ── */
 .tutorial-modal { padding-top: 32px; }
 .tutorial-emoji { font-size: 56px; text-align: center; margin-bottom: 16px; }
@@ -1677,6 +1687,37 @@ body {
       <span onclick="closeModal('modal-backup'); abrirTutorial();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">❓ Ver tutorial de la app</span>
     </div>
 
+    <!-- Notificaciones (mientras la app esté abierta) -->
+    <div class="form-group" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+      <label class="form-label" style="margin-bottom:10px;">🔔 NOTIFICACIONES</label>
+
+      <div id="notif-permiso-pedir" class="hidden">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.6;">
+          Activalas para que te avise de tareas y exámenes próximos, tu horario de cursada, y cuando un amigo te supere estudiando. Funciona mientras tengas la app abierta (en primer o segundo plano).
+        </div>
+        <button class="mbtn mbtn-ok" style="width:100%;" onclick="pedirPermisoNotificaciones()">🔔 Activar notificaciones</button>
+      </div>
+
+      <div id="notif-permiso-denegado" class="hidden" style="font-size:11px;color:var(--muted);line-height:1.6;">
+        ⚠️ Bloqueaste las notificaciones de esta app en el navegador. Para activarlas, tenés que habilitarlas desde la configuración del sitio en tu navegador o celular.
+      </div>
+
+      <div id="notif-opciones" class="hidden">
+        <div class="notif-opcion-row">
+          <span>📚 Tareas y exámenes próximos</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-tareas" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🏫 Mi horario de cursada</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-horario" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🏆 Cuando un amigo te supere estudiando</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-amigos" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-btns" style="margin-top:12px;">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-backup')">Cerrar</button>
     </div>
@@ -1859,7 +1900,7 @@ let _tutorialVistoCache = null;
 async function bootApp() {
   await migrarDesdeLocalStorage();
 
-  const [ver, s, lastSave, planRaw, semestre, dismissed, changelogVisto, tutorialVisto] = await Promise.all([
+  const [ver, s, lastSave, planRaw, semestre, dismissed, changelogVisto, tutorialVisto, notifConfigRaw] = await Promise.all([
     localforage.getItem('ing1-version'),
     localforage.getItem('ing1-state'),
     localforage.getItem('ing1-lastSave'),
@@ -1868,6 +1909,7 @@ async function bootApp() {
     localforage.getItem('pwa-dismissed'),
     localforage.getItem('ing1-changelog-visto'),
     localforage.getItem('ing1-tutorial-visto'),
+    localforage.getItem('ing1-notif-config'),
   ]);
 
   _lastSaveCache = lastSave || null;
@@ -1875,6 +1917,7 @@ async function bootApp() {
   _pwaDismissedCache = !!dismissed;
   _changelogVistoCache = changelogVisto != null ? parseInt(changelogVisto) : null;
   _tutorialVistoCache = tutorialVisto || null;
+  try { if (notifConfigRaw) _notifConfig = { ..._notifConfig, ...JSON.parse(notifConfigRaw) }; } catch(e) {}
   _esInstalacionNueva = !s; // no había ningún estado guardado antes: instalación nueva
   try { _planStateCache = JSON.parse(planRaw || '{}'); } catch(e) { _planStateCache = {}; }
 
@@ -3503,10 +3546,18 @@ function finalizarFasePomodoro(silencioso) {
 }
 
 function notificarPomodoro(msg) {
-  showToast(msg, 4000);
+  dispararNotificacion('Ing. Mecatrónica', msg);
+}
+
+// Disparador genérico: toast (siempre) + notificación del sistema (si hay
+// permiso concedido y la pestaña no está al frente) + sonido + vibración.
+// Lo usan tanto el Pomodoro como los recordatorios de tareas/exámenes,
+// horario y amigos.
+function dispararNotificacion(titulo, cuerpo) {
+  showToast(cuerpo, 4500);
   try {
     if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-      new Notification('Ing. Mecatrónica', { body: msg, icon: './icon-192.png' });
+      new Notification(titulo, { body: cuerpo, icon: './icon-192.png' });
     }
   } catch(e) {}
   try {
@@ -3518,6 +3569,158 @@ function notificarPomodoro(msg) {
     osc.start(); osc.stop(ctx.currentTime + 0.35);
   } catch(e) {}
   if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch(e) {} }
+}
+
+// ── RECORDATORIOS (mientras la app esté abierta) ──
+// Revisa cada cierto tiempo (mientras la pestaña siga abierta, en primer o
+// segundo plano) si hay algo para avisar: tareas/exámenes próximos, una
+// clase por empezar, o un amigo que te superó estudiando esta semana. No
+// funciona con la app totalmente cerrada — para eso haría falta un servidor
+// propio (ver explicación dada al usuario).
+let _notifConfig = { tareas: true, horario: true, amigos: true };
+let _notifIntervalo = null;
+let _notifYaAvisadas = { tareasExamenes: {}, horario: {}, amigos: new Set(), amigosSemana: null };
+
+function pedirPermisoNotificaciones() {
+  if (!('Notification' in window)) { showToast('⚠️ Tu navegador no soporta notificaciones'); return; }
+  Notification.requestPermission().then(permiso => {
+    actualizarUiNotificaciones();
+    if (permiso === 'granted') {
+      showToast('🔔 Notificaciones activadas');
+      iniciarCheckerNotificaciones();
+    } else {
+      showToast('🔕 No se activaron las notificaciones');
+    }
+  });
+}
+
+function guardarConfigNotificaciones() {
+  const t = document.getElementById('notif-tareas');
+  const h = document.getElementById('notif-horario');
+  const a = document.getElementById('notif-amigos');
+  if (!t || !h || !a) return;
+  _notifConfig = { tareas: t.checked, horario: h.checked, amigos: a.checked };
+  localforage.setItem('ing1-notif-config', JSON.stringify(_notifConfig)).catch(()=>{});
+}
+
+function actualizarUiNotificaciones() {
+  const pedir = document.getElementById('notif-permiso-pedir');
+  const denegado = document.getElementById('notif-permiso-denegado');
+  const opciones = document.getElementById('notif-opciones');
+  if (!pedir || !denegado || !opciones) return;
+  const permiso = ('Notification' in window) ? Notification.permission : 'unsupported';
+
+  pedir.classList.add('hidden'); denegado.classList.add('hidden'); opciones.classList.add('hidden');
+  if (permiso === 'granted') {
+    opciones.classList.remove('hidden');
+    document.getElementById('notif-tareas').checked = !!_notifConfig.tareas;
+    document.getElementById('notif-horario').checked = !!_notifConfig.horario;
+    document.getElementById('notif-amigos').checked = !!_notifConfig.amigos;
+  } else if (permiso === 'denied') {
+    denegado.classList.remove('hidden');
+  } else {
+    pedir.classList.remove('hidden');
+  }
+}
+
+function iniciarCheckerNotificaciones() {
+  if (_notifIntervalo) return;
+  chequearNotificaciones();
+  _notifIntervalo = setInterval(chequearNotificaciones, 60000); // cada 1 minuto
+}
+
+function chequearNotificaciones() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  chequearNotifTareasExamenes();
+  chequearNotifHorario();
+  chequearNotifAmigos();
+}
+
+function chequearNotifTareasExamenes() {
+  if (!_notifConfig.tareas) return;
+  const hoy = new Date();
+  const hoyKey = calKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  if (!_notifYaAvisadas.tareasExamenes[hoyKey]) _notifYaAvisadas.tareasExamenes[hoyKey] = new Set();
+  const avisadas = _notifYaAvisadas.tareasExamenes[hoyKey];
+
+  state.tareas.filter(t => !t.completada).forEach(t => {
+    const d = diasHasta(t.fecha);
+    const clave = 'tarea_' + t.id;
+    if (d >= 0 && d <= 1 && !avisadas.has(clave)) {
+      avisadas.add(clave);
+      dispararNotificacion('📚 Tarea próxima', `"${t.titulo}" vence ${d === 0 ? 'HOY' : 'mañana'}`);
+    }
+  });
+  state.examenes.forEach(e => {
+    const d = diasHasta(e.fecha);
+    const clave = 'examen_' + e.id;
+    if (d >= 0 && d <= 2 && !avisadas.has(clave)) {
+      avisadas.add(clave);
+      const m = getM(e.materiaId);
+      dispararNotificacion('📝 Examen próximo', `${(m && m.nombre) || 'Examen'} · ${e.tipo} ${d === 0 ? 'HOY' : 'en ' + d + ' día' + (d > 1 ? 's' : '')}`);
+    }
+  });
+}
+
+function chequearNotifHorario() {
+  if (!_notifConfig.horario) return;
+  const ahora = new Date();
+  const diaApp = ahora.getDay() - 1; // nuestro esquema: 0=lunes...4=viernes (JS: 0=domingo)
+  if (diaApp < 0 || diaApp > 4) return; // fin de semana, no hay clases cargadas
+
+  const hoyKey = calKey(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  if (!_notifYaAvisadas.horario[hoyKey]) _notifYaAvisadas.horario[hoyKey] = new Set();
+  const avisados = _notifYaAvisadas.horario[hoyKey];
+
+  // Agrupamos los bloques de 30min de hoy por groupId, y nos quedamos con
+  // el horario de inicio (el slot más temprano) de cada clase.
+  const gruposHoy = {};
+  state.horario.filter(c => c.dia === diaApp).forEach(c => {
+    const gid = c.groupId || c.id;
+    if (!gruposHoy[gid] || c.hora < gruposHoy[gid].hora) gruposHoy[gid] = c;
+  });
+
+  Object.values(gruposHoy).forEach(c => {
+    const partes = SLOTS[c.hora] ? SLOTS[c.hora].split(':').map(Number) : null;
+    if (!partes) return;
+    const inicio = new Date(ahora); inicio.setHours(partes[0], partes[1], 0, 0);
+    const minFaltan = Math.round((inicio - ahora) / 60000);
+    const gid = c.groupId || c.id;
+    if (minFaltan >= 0 && minFaltan <= 15 && !avisados.has(gid)) {
+      avisados.add(gid);
+      const m = getM(c.materiaId);
+      dispararNotificacion('🏫 Tu próxima clase', `${(m && m.nombre) || 'Clase'} ${minFaltan === 0 ? 'empieza AHORA' : 'empieza en ' + minFaltan + ' min'}${c.aula ? ' · Aula ' + c.aula : ''}`);
+    }
+  });
+}
+
+function chequearNotifAmigos() {
+  if (!_notifConfig.amigos || !_uid) return;
+  const ahora = new Date();
+  const diaSemana = ahora.getDay();
+  const diasDesdeLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(ahora); lunes.setDate(ahora.getDate() - diasDesdeLunes);
+  const semanaClave = calKey(lunes.getFullYear(), lunes.getMonth(), lunes.getDate());
+
+  if (_notifYaAvisadas.amigosSemana !== semanaClave) {
+    _notifYaAvisadas.amigos = new Set();
+    _notifYaAvisadas.amigosSemana = semanaClave;
+  }
+  const avisados = _notifYaAvisadas.amigos;
+  const misMinutos = minutosEstudioEstaSemana();
+
+  _amigosAceptadosUids.forEach(uid => {
+    const d = _perfilesAmigosData[uid];
+    if (!d) return;
+    const susMinutos = d.semanaMinutos || 0;
+    if (susMinutos > misMinutos && !avisados.has(uid)) {
+      avisados.add(uid);
+      dispararNotificacion('🏆 ¡Te superaron!', `${d.nombre || 'Un amigo'} ya estudió más que vos esta semana (${fmtHorasMin(susMinutos)} vs ${fmtHorasMin(misMinutos)})`);
+    }
+    // Si volviste a tomar la delantera, lo sacamos de la lista de "ya avisados"
+    // para que pueda volver a avisarte si te vuelve a superar más adelante.
+    if (susMinutos <= misMinutos && avisados.has(uid)) avisados.delete(uid);
+  });
 }
 
 function pomodoroPausarReanudar() {
@@ -4093,6 +4296,7 @@ function openModal(id) {
   }
   if(id==='modal-backup') {
     actualizarInfoBackup();
+    actualizarUiNotificaciones();
   }
   document.getElementById(id).classList.add('open');
 }
@@ -4530,6 +4734,7 @@ bootApp().then(async () => {
   await chequearTutorial();
   chequearNovedades();
   await restaurarPomodoroAlArrancar();
+  if ('Notification' in window && Notification.permission === 'granted') iniciarCheckerNotificaciones();
 }).catch(err => {
   console.error('[boot] Error al iniciar la app:', err);
   // Aún si falla la carga de datos guardados, arrancamos con el estado por defecto
