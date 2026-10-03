@@ -204,9 +204,9 @@ const CHANGELOG = [
   {
     id: 14,
     fecha: '2026-10-03',
-    titulo: 'Tareas: ya no aparecen materias aprobadas',
+    titulo: 'Tareas: ya no aparecen materias aprobadas ni archivadas',
     cambios: [
-      'Al crear una tarea, el selector de materia ya no muestra las que ya tenés aprobadas — tiene sentido, porque ahí no vas a tener tareas nuevas.',
+      'Al crear una tarea, el selector de materia ya no muestra las que ya tenés aprobadas o archivadas — tiene sentido, porque ahí no vas a tener tareas nuevas.',
     ],
   },
   {

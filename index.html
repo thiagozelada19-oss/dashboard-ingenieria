@@ -4308,12 +4308,12 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 
 function fillSelects(){
   // Para Tareas: solo materias que todavía pueden generar tareas (no las
-  // ya aprobadas — si ya rendiste el final, no vas a tener tarea nueva ahí).
+  // ya aprobadas ni las archivadas — ahí no vas a tener tareas nuevas).
   const tMateria = document.getElementById('t-materia');
   if (tMateria) {
-    let disponibles = state.materias.filter(m => m.estado !== 'aprobada');
+    let disponibles = state.materias.filter(m => m.estado !== 'aprobada' && m.estado !== 'archivada');
     // Si estamos editando una tarea de una materia que mientras tanto quedó
-    // aprobada, la incluimos igual — si no, el selector la reemplazaría sola
+    // aprobada o archivada, la incluimos igual — si no, el selector la reemplazaría sola
     // por otra materia al abrir el formulario, sin que el usuario lo note.
     if (editingTareaId) {
       const t = state.tareas.find(x => x.id === editingTareaId);
