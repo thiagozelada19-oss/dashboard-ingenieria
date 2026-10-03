@@ -4307,7 +4307,27 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 });
 
 function fillSelects(){
-  ['t-materia','c-materia','e-materia'].forEach(id=>{
+  // Para Tareas: solo materias que todavía pueden generar tareas (no las
+  // ya aprobadas — si ya rendiste el final, no vas a tener tarea nueva ahí).
+  const tMateria = document.getElementById('t-materia');
+  if (tMateria) {
+    let disponibles = state.materias.filter(m => m.estado !== 'aprobada');
+    // Si estamos editando una tarea de una materia que mientras tanto quedó
+    // aprobada, la incluimos igual — si no, el selector la reemplazaría sola
+    // por otra materia al abrir el formulario, sin que el usuario lo note.
+    if (editingTareaId) {
+      const t = state.tareas.find(x => x.id === editingTareaId);
+      if (t && !disponibles.some(m => m.id == t.materiaId)) {
+        const m = getM(t.materiaId);
+        if (m) disponibles = [...disponibles, m];
+      }
+    }
+    tMateria.innerHTML = disponibles.length
+      ? disponibles.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('')
+      : '<option value="">No hay materias disponibles</option>';
+  }
+
+  ['c-materia','e-materia'].forEach(id=>{
     const s=document.getElementById(id);
     if(s) s.innerHTML=state.materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
   });
@@ -4444,8 +4464,10 @@ window.eliminarMateria=function(id){
 function guardarTarea(){
   const titulo = sanitize(document.getElementById('t-titulo').value);
   const fecha  = document.getElementById('t-fecha').value;
+  const materiaVal = document.getElementById('t-materia').value;
   if(!titulo){ showToast('⚠️ Ingresá un título válido'); return; }
   if(!fecha){  showToast('⚠️ Seleccioná una fecha'); return; }
+  if(!materiaVal){ showToast('⚠️ No hay ninguna materia disponible para asignar'); return; }
   if(editingTareaId){
     state.tareas = state.tareas.map(t => t.id===editingTareaId ? {
       ...t, titulo,

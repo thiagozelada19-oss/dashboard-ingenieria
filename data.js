@@ -196,11 +196,19 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 14)
+//   id      → número entero único y creciente (el siguiente es 15)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 14,
+    fecha: '2026-10-03',
+    titulo: 'Tareas: ya no aparecen materias aprobadas',
+    cambios: [
+      'Al crear una tarea, el selector de materia ya no muestra las que ya tenés aprobadas — tiene sentido, porque ahí no vas a tener tareas nuevas.',
+    ],
+  },
   {
     id: 13,
     fecha: '2026-10-03',
