@@ -196,11 +196,20 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 16)
+//   id      → número entero único y creciente (el siguiente es 17)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 16,
+    fecha: '2026-10-04',
+    titulo: 'Tutorial más interactivo',
+    cambios: [
+      'El tutorial de bienvenida ahora resalta el ícono real de cada sección del menú y te muestra la pantalla de verdad detrás, en vez de solo texto.',
+      'Ahora tiene un paso por cada sección de la app — podés saltar pasos con los puntitos en cualquier momento.',
+    ],
+  },
   {
     id: 15,
     fecha: '2026-10-03',
@@ -343,41 +352,83 @@ const CHANGELOG = [
 // Se muestra una sola vez, la primera vez que alguien abre la app (no a
 // usuarios que ya la venían usando). Para reordenar o cambiar el texto de
 // un paso, solo hay que editar este array — no hace falta tocar index.html.
+//
+// El campo opcional "seccion" hace que ese paso resalte el ícono real de esa
+// sección en el menú (y cambie a esa pantalla de verdad detrás del cartel).
+// Si se omite "seccion" (como en el primer y el último paso), el tutorial
+// se muestra como un cartel centrado normal, sin resaltar nada.
+// "seccion" debe ser el mismo nombre que usa el menú (showSec), o 'cuenta'
+// para apuntar al botón de la nube (☁️) en la barra de arriba.
 const TUTORIAL = [
   {
     emoji: '👋',
     titulo: '¡Bienvenido!',
-    texto: 'Esta app te ayuda a organizar tus materias, tareas, exámenes y horarios de toda la carrera, en un solo lugar.',
+    texto: 'Esta app te ayuda a organizar tus materias, tareas, exámenes y horarios de toda la carrera, en un solo lugar. Te muestro rápido cada sección — tocá "Siguiente" para seguir, o "Saltar" si ya la conocés.',
   },
   {
     emoji: '📚',
     titulo: 'Materias y notas',
-    texto: 'Cargá tus materias con sus notas parciales. La app calcula sola si quedaste regular, promocionada o libre.',
+    texto: 'Acá cargás tus materias con sus notas parciales. La app calcula sola si quedaste regular, promocionada o libre.',
+    seccion: 'materias',
   },
   {
     emoji: '✅',
-    titulo: 'Tareas y exámenes',
-    texto: 'Anotá fechas de entrega y de parciales o finales. La app te avisa con alertas cuando se van acercando.',
+    titulo: 'Tareas',
+    texto: 'Anotá tus entregas con fecha. La app te avisa con alertas cuando se van acercando.',
+    seccion: 'tareas',
+  },
+  {
+    emoji: '📝',
+    titulo: 'Exámenes',
+    texto: 'Cargá tus parciales, finales, recuperatorios o fechas globales, con lugar y hora si ya los sabés.',
+    seccion: 'examenes',
+  },
+  {
+    emoji: '🗓️',
+    titulo: 'Horario',
+    texto: 'Armá tu horario semanal de cursada: qué materia tenés, qué día y en qué aula.',
+    seccion: 'horario',
   },
   {
     emoji: '🍅',
     titulo: 'Pomodoro',
     texto: 'Estudiá con un cronómetro por materia: el tiempo se suma solo a esa materia, para llevar el control de cuánto le dedicaste.',
+    seccion: 'pomodoro',
+  },
+  {
+    emoji: '📊',
+    titulo: 'Avance',
+    texto: 'Mirá de un vistazo cómo vas en la carrera: materias aprobadas, promedio, y qué te falta.',
+    seccion: 'avance',
   },
   {
     emoji: '🎓',
-    titulo: 'Correlativas y avance',
-    texto: 'Mirá qué materias podés cursar ahora según tus correlativas, y seguí tu avance en toda la carrera.',
+    titulo: 'Correlativas',
+    texto: 'Mirá qué materias podés cursar ahora según tus correlativas aprobadas o regularizadas.',
+    seccion: 'corr',
+  },
+  {
+    emoji: '🗒️',
+    titulo: 'Calendario académico',
+    texto: 'Fechas importantes de la facultad: inicio y fin de clases, recesos, e inscripciones a examen.',
+    seccion: 'cal',
+  },
+  {
+    emoji: '👥',
+    titulo: 'Amigos',
+    texto: 'Agregá a tus compañeros con un código y comparen horas de estudio y avance en la carrera.',
+    seccion: 'amigos',
   },
   {
     emoji: '☁️',
-    titulo: 'Cuenta y amigos',
-    texto: 'Si querés, iniciá sesión con Google (☁️) para tener tus datos en todos tus dispositivos, y agregá amigos (👥) para comparar cuánto estudiaron.',
+    titulo: 'Cuenta y sincronización',
+    texto: 'Si querés, iniciá sesión con Google acá para tener tus datos sincronizados entre el celular y la computadora. Es opcional: sin iniciar sesión, la app funciona igual.',
+    seccion: 'cuenta',
   },
   {
     emoji: '🎉',
     titulo: '¡Listo para arrancar!',
-    texto: 'Explorá las secciones desde el menú. Podés volver a ver este tutorial cuando quieras desde el botón de Backup (💾).',
+    texto: 'Eso es todo. Podés volver a ver este tutorial cuando quieras desde el botón de Backup (💾).',
   },
 ];
 

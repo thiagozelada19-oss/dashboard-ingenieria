@@ -181,7 +181,27 @@ body {
 .toggle-switch input:checked + .toggle-slider::before { background: var(--accent); transform: translate(18px, -50%); }
 
 /* ── TUTORIAL DE BIENVENIDA ── */
+#modal-tutorial { background: transparent; } /* el oscurecido lo hace tutorial-spotlight-overlay */
 .tutorial-modal { padding-top: 32px; }
+
+/* Capa de foco: un div ("agujero") con una sombra gigante que oscurece todo
+   excepto su propio rectángulo — técnica clásica para simular un "spotlight"
+   sin necesitar máscaras SVG. Es puramente visual (pointer-events:none), así
+   que no bloquea nada; tocar afuera de la tarjeta del tutorial lo cierra,
+   igual que cualquier otro modal de la app. */
+.tutorial-spotlight-overlay { position: fixed; inset: 0; z-index: 250; pointer-events: none; }
+.tutorial-spotlight-overlay.hidden { display: none; }
+.tutorial-spotlight-hole {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.78);
+  transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
+  animation: tutorial-pulso 1.6s ease-in-out infinite;
+}
+@keyframes tutorial-pulso {
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 0 0 rgba(94,234,212,0.55); }
+  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 0 9px rgba(94,234,212,0); }
+}
 .tutorial-emoji { font-size: 56px; text-align: center; margin-bottom: 16px; }
 .tutorial-titulo { font-size: 19px; font-weight: 800; text-align: center; margin-bottom: 10px; }
 .tutorial-texto { font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.6; padding: 0 6px; margin-bottom: 24px; }
@@ -1603,6 +1623,12 @@ body {
 
 
 <!-- Modal Backup -->
+<!-- Capa de "foco": oscurece toda la pantalla salvo un agujero alrededor
+     del ícono real que el tutorial está explicando en ese paso. -->
+<div class="tutorial-spotlight-overlay hidden" id="tutorial-spotlight">
+  <div class="tutorial-spotlight-hole" id="tutorial-spotlight-hole"></div>
+</div>
+
 <div class="modal-overlay" id="modal-tutorial">
   <div class="modal tutorial-modal">
     <div id="tutorial-contenido"></div>
@@ -2020,8 +2046,8 @@ async function chequearTutorial() {
 
 function abrirTutorial() {
   tutorialPaso = 0;
-  renderTutorial();
   openModal('modal-tutorial');
+  renderTutorial();
 }
 
 function tutorialIrA(i) {
@@ -2031,7 +2057,12 @@ function tutorialIrA(i) {
 }
 function tutorialSiguiente() { tutorialIrA(tutorialPaso + 1); }
 function tutorialAnterior()  { tutorialIrA(tutorialPaso - 1); }
-function tutorialFinalizar() { closeModal('modal-tutorial'); }
+
+function tutorialFinalizar() {
+  closeModal('modal-tutorial');
+  const overlay = document.getElementById('tutorial-spotlight');
+  if (overlay) overlay.classList.add('hidden');
+}
 
 function renderTutorial() {
   if (!TUTORIAL || !TUTORIAL.length) return;
@@ -2057,7 +2088,46 @@ function renderTutorial() {
       ? `<button class="mbtn mbtn-cancel" onclick="tutorialFinalizar()">Saltar</button>`
       : `<button class="mbtn mbtn-cancel" onclick="tutorialAnterior()">← Atrás</button>`}
     <button class="mbtn mbtn-ok" onclick="${esUltimo ? 'tutorialFinalizar()' : 'tutorialSiguiente()'}">${esUltimo ? '¡Empezar! 🚀' : 'Siguiente →'}</button>`;
+
+  tutorialReposicionarSpotlight();
 }
+
+// Resalta (con un "agujero" de foco) el ícono real de la sección que
+// describe el paso actual, y cambia a esa pantalla de verdad detrás del
+// tutorial. Si el paso no tiene "seccion" (bienvenida / cierre), se ve
+// como un oscurecido parejo, sin agujero.
+function tutorialReposicionarSpotlight() {
+  const modal = document.getElementById('modal-tutorial');
+  if (!modal || !modal.classList.contains('open')) return; // el tutorial no está abierto: no tocar nada
+  const paso = TUTORIAL && TUTORIAL[tutorialPaso];
+  const overlay = document.getElementById('tutorial-spotlight');
+  const hole = document.getElementById('tutorial-spotlight-hole');
+  if (!paso || !overlay || !hole) return;
+  overlay.classList.remove('hidden');
+
+  let target = null;
+  if (paso.seccion === 'cuenta') {
+    target = document.getElementById('btn-cuenta');
+  } else if (paso.seccion) {
+    const btn = document.querySelector(`.nav-item[onclick*="showSec('${paso.seccion}'"]`);
+    if (btn) { showSec(paso.seccion, btn); target = btn; }
+  }
+
+  if (!target) {
+    // Sin sección que resaltar: oscurecido parejo (agujero fuera de pantalla)
+    hole.style.width = '0px'; hole.style.height = '0px';
+    hole.style.left = '-9999px'; hole.style.top = '-9999px';
+    return;
+  }
+
+  const r = target.getBoundingClientRect();
+  const pad = 8;
+  hole.style.left   = (r.left - pad) + 'px';
+  hole.style.top    = (r.top - pad) + 'px';
+  hole.style.width  = (r.width + pad * 2) + 'px';
+  hole.style.height = (r.height + pad * 2) + 'px';
+}
+window.addEventListener('resize', tutorialReposicionarSpotlight);
 
 // ── SINCRONIZACIÓN CON LA NUBE (Firebase Auth + Firestore) ──
 // La app sigue funcionando 100% local (IndexedDB) sin iniciar sesión.
@@ -4342,7 +4412,10 @@ function onTipoExamenChange() {
 function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; if(id==='modal-corr-materia') corrMateriaAbierta=null; }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{
-  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+  o.addEventListener('click',e=>{
+    if(e.target!==o) return;
+    if (o.id === 'modal-tutorial') tutorialFinalizar(); else o.classList.remove('open');
+  });
 });
 
 function fillSelects(){
