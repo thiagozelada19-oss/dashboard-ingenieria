@@ -1485,16 +1485,22 @@ body {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">TIPO</label>
-        <select class="form-input" id="e-tipo">
+        <select class="form-input" id="e-tipo" onchange="onTipoExamenChange()">
           <option value="parcial">📝 Parcial</option>
           <option value="final">🎓 Final</option>
           <option value="recup">🔄 Recuperatorio</option>
           <option value="quiz">⚡ Quiz/Coloquio</option>
+          <option value="global">🌐 Global</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">NÚMERO (Ej: 1°, 2°)</label>
-        <input class="form-input" id="e-num" placeholder="1°" maxlength="4">
+      <div class="form-group" id="e-num-wrap">
+        <label class="form-label" id="e-num-label">NÚMERO DE PARCIAL</label>
+        <select class="form-input" id="e-num-parcial">
+          <option value="1°">1°</option>
+          <option value="2°">2°</option>
+          <option value="3°">3°</option>
+        </select>
+        <input class="form-input hidden" id="e-num" placeholder="1°" maxlength="4">
       </div>
     </div>
     <div class="form-group">
@@ -4298,7 +4304,40 @@ function openModal(id) {
     actualizarInfoBackup();
     actualizarUiNotificaciones();
   }
+  if(id==='modal-examen') {
+    document.getElementById('e-tipo').value = 'parcial';
+    document.getElementById('e-num-parcial').value = '1°';
+    onTipoExamenChange();
+  }
   document.getElementById(id).classList.add('open');
+}
+
+// El campo "número" cambia según el tipo de examen:
+//  - Parcial  → selector fijo 1°/2°/3° (no hay que escribirlo)
+//  - Global   → no aplica número, se oculta el campo entero
+//  - Resto    → texto libre (ej: "2do llamado", "coloquio 1")
+function onTipoExamenChange() {
+  const tipo = document.getElementById('e-tipo').value;
+  const wrap = document.getElementById('e-num-wrap');
+  const selectParcial = document.getElementById('e-num-parcial');
+  const inputTexto = document.getElementById('e-num');
+  const label = document.getElementById('e-num-label');
+  if (!wrap || !selectParcial || !inputTexto || !label) return;
+
+  if (tipo === 'global') {
+    wrap.style.display = 'none';
+    inputTexto.value = '';
+  } else if (tipo === 'parcial') {
+    wrap.style.display = '';
+    label.textContent = 'NÚMERO DE PARCIAL';
+    selectParcial.classList.remove('hidden');
+    inputTexto.classList.add('hidden');
+  } else {
+    wrap.style.display = '';
+    label.textContent = 'NÚMERO (Ej: 1°, 2°)';
+    selectParcial.classList.add('hidden');
+    inputTexto.classList.remove('hidden');
+  }
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); editingMateriaId=null; editingTareaId=null; editingClaseId=null; if(id==='modal-corr-materia') corrMateriaAbierta=null; }
 
@@ -4307,11 +4346,16 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 });
 
 function fillSelects(){
-  // Para Tareas: solo materias que todavía pueden generar tareas (no las
-  // ya aprobadas ni las archivadas — ahí no vas a tener tareas nuevas).
+  // Para Tareas y Exámenes: solo materias que todavía pueden generarlos (no
+  // las ya aprobadas ni las archivadas — ahí no vas a tener nada nuevo).
+  const disponiblesBase = state.materias.filter(m => m.estado !== 'aprobada' && m.estado !== 'archivada');
+  const htmlDisponibles = (lista) => lista.length
+    ? lista.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('')
+    : '<option value="">No hay materias disponibles</option>';
+
   const tMateria = document.getElementById('t-materia');
   if (tMateria) {
-    let disponibles = state.materias.filter(m => m.estado !== 'aprobada' && m.estado !== 'archivada');
+    let disponibles = disponiblesBase;
     // Si estamos editando una tarea de una materia que mientras tanto quedó
     // aprobada o archivada, la incluimos igual — si no, el selector la reemplazaría sola
     // por otra materia al abrir el formulario, sin que el usuario lo note.
@@ -4322,15 +4366,14 @@ function fillSelects(){
         if (m) disponibles = [...disponibles, m];
       }
     }
-    tMateria.innerHTML = disponibles.length
-      ? disponibles.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('')
-      : '<option value="">No hay materias disponibles</option>';
+    tMateria.innerHTML = htmlDisponibles(disponibles);
   }
 
-  ['c-materia','e-materia'].forEach(id=>{
-    const s=document.getElementById(id);
-    if(s) s.innerHTML=state.materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
-  });
+  const eMateria = document.getElementById('e-materia');
+  if (eMateria) eMateria.innerHTML = htmlDisponibles(disponiblesBase);
+
+  const cMateria = document.getElementById('c-materia');
+  if (cMateria) cMateria.innerHTML = state.materias.map(m=>`<option value="${m.id}">${m.nombre}</option>`).join('');
 }
 
 // ── ACCIONES MATERIAS ──
@@ -4519,16 +4562,24 @@ window.eliminarT=function(id){
 function guardarExamen(){
   const fecha=document.getElementById('e-fecha').value;
   if(!fecha){alert('Ingresá una fecha');return;}
+  const materiaVal = document.getElementById('e-materia').value;
+  if(!materiaVal){ showToast('⚠️ No hay ninguna materia disponible para asignar'); return; }
+  const tipo = document.getElementById('e-tipo').value;
+  let num = '';
+  if (tipo === 'parcial') num = document.getElementById('e-num-parcial').value;
+  else if (tipo !== 'global') num = document.getElementById('e-num').value.trim();
+
   state.examenes.push({
     id: Date.now(),
-    materiaId: parseInt(document.getElementById('e-materia').value),
-    tipo: document.getElementById('e-tipo').value,
-    num: document.getElementById('e-num').value.trim(),
+    materiaId: parseInt(materiaVal),
+    tipo,
+    num,
     fecha,
     hora: document.getElementById('e-hora').value||null,
     aula: document.getElementById('e-aula').value.trim()||null,
   });
   ['e-num','e-fecha','e-hora','e-aula'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('e-num-parcial').value = '1°';
   closeModal('modal-examen');
   showToast('📅 Examen agregado');
   saveState(); render();
