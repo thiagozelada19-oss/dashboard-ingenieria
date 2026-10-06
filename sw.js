@@ -1,7 +1,7 @@
 // Service Worker - Dashboard Ing. Mecatrónica UNCUYO
 // Subí este número cada vez que quieras forzar que los usuarios reciban
 // la versión nueva del sitio (invalida la caché vieja automáticamente).
-const CACHE_VERSION = 'v20';
+const CACHE_VERSION = 'v23';
 const CACHE = 'ing-mct-' + CACHE_VERSION;
 
 const PRECACHE_ASSETS = [
@@ -9,6 +9,7 @@ const PRECACHE_ASSETS = [
   './index.html',
   './data.js',
   './firebase-config.js',
+  './storage-config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -74,5 +75,24 @@ self.addEventListener('fetch', e => {
         return hit || network;
       })
     )
+  );
+});
+
+// ── NOTIFICACIONES: click en un botón (Pausar/Detener del Pomodoro, etc.) ──
+// El Service Worker no tiene acceso directo al estado del Pomodoro (vive en
+// la página), así que le avisa a la pestaña abierta para que actúe ella.
+// Si no hay ninguna pestaña abierta, simplemente abre/enfoca la app.
+self.addEventListener('notificationclick', (event) => {
+  const accion = event.action || 'abrir';
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(lista => {
+      if (lista.length > 0) {
+        const cliente = lista[0];
+        cliente.postMessage({ tipo: 'notif-accion', accion });
+        return cliente.focus();
+      }
+      return self.clients.openWindow('./');
+    })
   );
 });
