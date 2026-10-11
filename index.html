@@ -170,6 +170,16 @@ body {
 }
 .nav-badge.hidden { display: none; }
 
+/* ── CONFIGURACIÓN (menú del engranaje) ── */
+.config-row { display: flex; align-items: center; gap: 14px; padding: 14px 6px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.config-row:last-of-type { border-bottom: none; }
+.config-row:active { background: var(--panel2); }
+.config-icono { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+.config-texto { flex: 1; min-width: 0; }
+.config-titulo { font-size: 14px; font-weight: 700; }
+.config-sub { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.config-flecha { font-size: 20px; color: var(--muted); flex-shrink: 0; }
+
 /* ── NOTIFICACIONES ── */
 .notif-opcion-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); }
 .notif-opcion-row:last-child { border-bottom: none; }
@@ -180,34 +190,55 @@ body {
 .toggle-switch input:checked + .toggle-slider { background: rgba(94,234,212,0.15); border-color: var(--accent); }
 .toggle-switch input:checked + .toggle-slider::before { background: var(--accent); transform: translate(18px, -50%); }
 
-/* ── TUTORIAL DE BIENVENIDA ── */
-#modal-tutorial { background: transparent; } /* el oscurecido lo hace tutorial-spotlight-overlay */
-.tutorial-modal { padding-top: 32px; }
-
-/* Capa de foco: un div ("agujero") con una sombra gigante que oscurece todo
-   excepto su propio rectángulo — técnica clásica para simular un "spotlight"
-   sin necesitar máscaras SVG. Es puramente visual (pointer-events:none), así
-   que no bloquea nada; tocar afuera de la tarjeta del tutorial lo cierra,
-   igual que cualquier otro modal de la app. */
-.tutorial-spotlight-overlay { position: fixed; inset: 0; z-index: 250; pointer-events: none; }
+/* ── TUTORIAL DE BIENVENIDA (globitos con flecha) ── */
+/* Capa de foco: el "agujero" tiene una sombra gigante que oscurece todo
+   menos su propio rectángulo (técnica clásica de spotlight, sin máscaras).
+   La capa frena los toques mientras dura el tutorial; tocar justo el
+   elemento resaltado equivale a "Siguiente". */
+.tutorial-spotlight-overlay { position: fixed; inset: 0; z-index: 250; }
 .tutorial-spotlight-overlay.hidden { display: none; }
 .tutorial-spotlight-hole {
-  position: fixed;
-  border-radius: 16px;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.78);
+  position: fixed; border-radius: 16px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
   transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
   animation: tutorial-pulso 1.6s ease-in-out infinite;
 }
 @keyframes tutorial-pulso {
-  0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 0 0 rgba(94,234,212,0.55); }
-  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.78), 0 0 0 9px rgba(94,234,212,0); }
+  0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), 0 0 0 0 rgba(94,234,212,0.6); }
+  50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), 0 0 0 9px rgba(94,234,212,0); }
 }
-.tutorial-emoji { font-size: 56px; text-align: center; margin-bottom: 16px; }
-.tutorial-titulo { font-size: 19px; font-weight: 800; text-align: center; margin-bottom: 10px; }
-.tutorial-texto { font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.6; padding: 0 6px; margin-bottom: 24px; }
-.tutorial-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 18px; }
-.tutorial-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; }
-.tutorial-dot.activo { background: var(--accent); width: 20px; border-radius: 4px; }
+
+/* Globito de texto: chico, con ancho fijo para poder medirlo y ubicarlo */
+.tutorial-tooltip {
+  position: fixed; z-index: 260;
+  width: min(280px, calc(100vw - 20px));
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 14px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: left 0.25s ease, top 0.25s ease;
+}
+.tutorial-tooltip.hidden { display: none; }
+.tutorial-tip-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tutorial-tip-emoji { font-size: 18px; }
+.tutorial-tip-titulo { flex: 1; font-size: 13px; font-weight: 800; }
+.tutorial-tip-cerrar { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 2px 4px; }
+.tutorial-tip-texto { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.tutorial-tip-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tutorial-tip-contador { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+.tutorial-tip-botones { display: flex; gap: 6px; }
+.tutorial-btn { border-radius: 10px; font-size: 12px; font-weight: 700; padding: 7px 12px; cursor: pointer; border: 1px solid var(--border); background: var(--panel2); color: var(--text); }
+.tutorial-btn.primario { background: var(--accent); border-color: var(--accent); color: #0b0d12; }
+.tutorial-tip-progreso { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.tutorial-tip-progreso > div { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.25s ease; }
+
+/* Flecha: un cuadradito girado 45° que sobresale del globito. El nombre indica
+   hacia dónde apunta. */
+.tutorial-flecha { position: absolute; width: 12px; height: 12px; background: var(--panel); border: 1px solid var(--accent); transform: rotate(45deg); }
+.tutorial-flecha.abajo     { bottom: -7px; border-top: none;    border-left: none; }
+.tutorial-flecha.arriba    { top: -7px;    border-bottom: none; border-right: none; }
+.tutorial-flecha.derecha   { right: -7px;  border-bottom: none; border-left: none; }
+.tutorial-flecha.izquierda { left: -7px;   border-top: none;    border-right: none; }
+.tutorial-flecha.oculta    { display: none; }
 
 /* ── AMIGOS ── */
 .amigo-codigo-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
@@ -256,6 +287,7 @@ body {
 .pomo-resumen-barra.cumplida { background: var(--success); }
 .pomo-resumen-tiempo { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
 .pomo-stat-num { font-size: 16px !important; }
+.pomo-total-box { flex-direction: row; align-items: center; gap: 14px; margin-bottom: 12px; }
 
 /* Píldora flotante: visible en cualquier sección mientras corre una sesión */
 .pomo-mini {
@@ -328,6 +360,14 @@ body {
 .corr-sq.cg-regular    { background: rgba(34,211,238,0.12);  border-color: var(--accent7); }
 .corr-sq.cg-disponible { background: rgba(129,140,248,0.10); border-color: var(--accent2); }
 .corr-sq.cg-bloqueada  { background: var(--panel2); border-color: var(--border); opacity: 0.55; }
+/* Semestre bloqueado por la regla de bloque: más apagado, rayado y con candado */
+.corr-sq.cg-bloque { opacity: 0.4; cursor: not-allowed; border-style: dashed;
+  background: repeating-linear-gradient(135deg, var(--panel2) 0 7px, rgba(255,255,255,0.035) 7px 14px); }
+.corr-sq.cg-bloque:hover { transform: none; }
+.corr-sq.cg-bloque::after { content: '🔒'; position: absolute; top: 3px; right: 4px; font-size: 9px; }
+.corr-col-bloque { height: 26px; margin-top: 4px; font-size: 8.5px; line-height: 1.25; text-align: center; overflow: hidden; }
+.corr-col-bloque.bloqueado { color: var(--accent3); }
+.corr-col-bloque.habilitado { color: var(--success); }
 
 /* Al pasar el mouse por un cuadrado: se atenúa todo menos él y su árbol */
 .corr-grid-inner.hover-activo .corr-sq { opacity: 0.2; }
@@ -654,21 +694,6 @@ body {
 .stat-icon { font-size:20px; }
 .stat-num { font-family:'Space Mono',monospace; font-size:28px; font-weight:700; line-height:1; }
 .stat-lbl { font-size:11px; color:var(--muted); font-weight:500; }
-
-.donut-card {
-  background:var(--panel); border:1px solid var(--border);
-  border-radius:20px; padding:20px;
-  display:flex; align-items:center; gap:20px; margin-bottom:12px;
-}
-.donut-wrap { position:relative; width:100px; height:100px; flex-shrink:0; }
-.donut-wrap svg { transform:rotate(-90deg); }
-.donut-center {
-  position:absolute; inset:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  font-family:'Space Mono',monospace;
-}
-.donut-pct { font-size:20px; font-weight:700; color:var(--accent); }
-.donut-sub { font-size:8px; color:var(--muted); }
 
 .barra-row { margin-bottom:12px; }
 .barra-info { display:flex; justify-content:space-between; margin-bottom:6px; }
@@ -1155,8 +1180,7 @@ body {
     <div class="topbar-sub" id="top-sub">MATERIAS Y NOTAS</div>
   </div>
   <div class="topbar-right">
-    <button class="topbar-backup" id="btn-cuenta" onclick="openModal('modal-cuenta')" title="Cuenta y sincronización">☁️</button>
-    <button class="topbar-backup" onclick="openModal('modal-backup')" title="Backup de datos">💾</button>
+    <button class="topbar-backup" id="btn-config" onclick="openModal('modal-config')" title="Configuración">⚙️</button>
     <button class="topbar-add" id="fab" onclick="fabAction()">+</button>
   </div>
 </div>
@@ -1214,20 +1238,6 @@ body {
   <!-- AVANCE -->
   <section id="sec-avance" class="section">
     <div class="stat-row" id="stat-row"></div>
-    <div class="donut-card">
-      <div class="donut-wrap">
-        <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--accent)" stroke-width="12"
-            stroke-dasharray="251" id="donut-circ" stroke-dashoffset="251" stroke-linecap="round"/>
-        </svg>
-        <div class="donut-center">
-          <div class="donut-pct" id="donut-pct">0%</div>
-          <div class="donut-sub">aprobadas</div>
-        </div>
-      </div>
-      <div id="donut-legend" style="flex:1;"></div>
-    </div>
     <div class="card" id="barras-card">
       <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Promedio por materia</div>
       <div id="barras"></div>
@@ -1633,18 +1643,24 @@ body {
 
 
 <!-- Modal Backup -->
-<!-- Capa de "foco": oscurece toda la pantalla salvo un agujero alrededor
-     del ícono real que el tutorial está explicando en ese paso. -->
-<div class="tutorial-spotlight-overlay hidden" id="tutorial-spotlight">
+<!-- Tutorial: capa de "foco" (oscurece todo menos lo que se está explicando)
+     + un globito chico con una flecha que apunta a eso. -->
+<div class="tutorial-spotlight-overlay hidden" id="tutorial-spotlight" onclick="tutorialClickCapa(event)">
   <div class="tutorial-spotlight-hole" id="tutorial-spotlight-hole"></div>
 </div>
-
-<div class="modal-overlay" id="modal-tutorial">
-  <div class="modal tutorial-modal">
-    <div id="tutorial-contenido"></div>
-    <div class="tutorial-dots" id="tutorial-dots"></div>
-    <div class="modal-btns" id="tutorial-botones"></div>
+<div class="tutorial-tooltip hidden" id="tutorial-tooltip">
+  <div class="tutorial-flecha" id="tutorial-flecha"></div>
+  <div class="tutorial-tip-header">
+    <span class="tutorial-tip-emoji" id="tutorial-tip-emoji"></span>
+    <span class="tutorial-tip-titulo" id="tutorial-tip-titulo"></span>
+    <button class="tutorial-tip-cerrar" onclick="tutorialFinalizar()" title="Cerrar tutorial">✕</button>
   </div>
+  <div class="tutorial-tip-texto" id="tutorial-tip-texto"></div>
+  <div class="tutorial-tip-footer">
+    <span class="tutorial-tip-contador" id="tutorial-tip-contador"></span>
+    <div class="tutorial-tip-botones" id="tutorial-botones"></div>
+  </div>
+  <div class="tutorial-tip-progreso"><div id="tutorial-progreso-barra"></div></div>
 </div>
 
 <div class="modal-overlay" id="modal-novedades">
@@ -1654,6 +1670,102 @@ body {
     <div id="novedades-contenido"><!-- se arma dinámicamente desde CHANGELOG, ver renderNovedades() --></div>
     <div class="modal-btns" style="margin-top:12px;">
       <button class="mbtn mbtn-ok" style="width:100%;" onclick="closeModal('modal-novedades')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-config">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ <span>Configuración</span></div>
+
+    <div class="config-row" onclick="abrirDesdeConfig('modal-cuenta')">
+      <div class="config-icono">☁️</div>
+      <div class="config-texto">
+        <div class="config-titulo">Cuenta y sincronización</div>
+        <div class="config-sub" id="config-cuenta-sub">Sin sesión iniciada</div>
+      </div>
+      <div class="config-flecha">›</div>
+    </div>
+    <div class="config-row" onclick="abrirDesdeConfig('modal-backup')">
+      <div class="config-icono">💾</div>
+      <div class="config-texto">
+        <div class="config-titulo">Backup de datos</div>
+        <div class="config-sub">Exportar o restaurar tus datos</div>
+      </div>
+      <div class="config-flecha">›</div>
+    </div>
+    <div class="config-row" onclick="abrirDesdeConfig('modal-notificaciones')">
+      <div class="config-icono">🔔</div>
+      <div class="config-texto">
+        <div class="config-titulo">Notificaciones</div>
+        <div class="config-sub">Avisos de tareas, exámenes, horario y amigos</div>
+      </div>
+      <div class="config-flecha">›</div>
+    </div>
+    <div class="config-row" onclick="closeModal('modal-config'); abrirTutorial();">
+      <div class="config-icono">❓</div>
+      <div class="config-texto">
+        <div class="config-titulo">Tutorial de la app</div>
+        <div class="config-sub">Volver a ver la guía de cada sección</div>
+      </div>
+      <div class="config-flecha">›</div>
+    </div>
+    <div class="config-row" onclick="closeModal('modal-config'); abrirNovedades();">
+      <div class="config-icono">🆕</div>
+      <div class="config-texto">
+        <div class="config-titulo">Historial de actualizaciones</div>
+        <div class="config-sub">Qué cambió en cada versión</div>
+      </div>
+      <div class="config-flecha">›</div>
+    </div>
+
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="mbtn mbtn-cancel" onclick="closeModal('modal-config')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-notificaciones">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔔 <span>Notificaciones</span></div>
+    <!-- Notificaciones (mientras la app esté abierta) -->
+    <div class="form-group">
+
+      <div id="notif-permiso-pedir" class="hidden">
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.6;">
+          Activalas para que te avise de tareas y exámenes próximos, tu horario de cursada, y cuando un amigo te supere estudiando. Funciona mientras tengas la app abierta (en primer o segundo plano).
+        </div>
+        <button class="mbtn mbtn-ok" style="width:100%;" onclick="pedirPermisoNotificaciones()">🔔 Activar notificaciones</button>
+      </div>
+
+      <div id="notif-permiso-denegado" class="hidden" style="font-size:11px;color:var(--muted);line-height:1.6;">
+        ⚠️ Bloqueaste las notificaciones de esta app en el navegador. Para activarlas, tenés que habilitarlas desde la configuración del sitio en tu navegador o celular.
+      </div>
+
+      <div id="notif-opciones" class="hidden">
+        <div class="notif-opcion-row">
+          <span>📚 Tareas y exámenes próximos</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-tareas" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🏫 Mi horario de cursada</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-horario" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🏆 Cuando un amigo te supere estudiando</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-amigos" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🔊 Sonido en las notificaciones</span>
+          <label class="toggle-switch"><input type="checkbox" id="notif-sonido" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="mbtn mbtn-cancel" onclick="closeModal('modal-notificaciones')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1724,42 +1836,6 @@ body {
 
     <!-- Info estado actual -->
     <div id="backup-info" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-align:center;padding:8px;"></div>
-    <div style="text-align:center;margin-top:4px;display:flex;flex-direction:column;gap:8px;">
-      <span onclick="closeModal('modal-backup'); abrirNovedades();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">🆕 Ver historial de actualizaciones</span>
-      <span onclick="closeModal('modal-backup'); abrirTutorial();" style="font-size:11.5px;color:var(--accent);text-decoration:underline;cursor:pointer;">❓ Ver tutorial de la app</span>
-    </div>
-
-    <!-- Notificaciones (mientras la app esté abierta) -->
-    <div class="form-group" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
-      <label class="form-label" style="margin-bottom:10px;">🔔 NOTIFICACIONES</label>
-
-      <div id="notif-permiso-pedir" class="hidden">
-        <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.6;">
-          Activalas para que te avise de tareas y exámenes próximos, tu horario de cursada, y cuando un amigo te supere estudiando. Funciona mientras tengas la app abierta (en primer o segundo plano).
-        </div>
-        <button class="mbtn mbtn-ok" style="width:100%;" onclick="pedirPermisoNotificaciones()">🔔 Activar notificaciones</button>
-      </div>
-
-      <div id="notif-permiso-denegado" class="hidden" style="font-size:11px;color:var(--muted);line-height:1.6;">
-        ⚠️ Bloqueaste las notificaciones de esta app en el navegador. Para activarlas, tenés que habilitarlas desde la configuración del sitio en tu navegador o celular.
-      </div>
-
-      <div id="notif-opciones" class="hidden">
-        <div class="notif-opcion-row">
-          <span>📚 Tareas y exámenes próximos</span>
-          <label class="toggle-switch"><input type="checkbox" id="notif-tareas" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
-        </div>
-        <div class="notif-opcion-row">
-          <span>🏫 Mi horario de cursada</span>
-          <label class="toggle-switch"><input type="checkbox" id="notif-horario" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
-        </div>
-        <div class="notif-opcion-row">
-          <span>🏆 Cuando un amigo te supere estudiando</span>
-          <label class="toggle-switch"><input type="checkbox" id="notif-amigos" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
-        </div>
-      </div>
-    </div>
-
     <div class="modal-btns" style="margin-top:12px;">
       <button class="mbtn mbtn-cancel" onclick="closeModal('modal-backup')">Cerrar</button>
     </div>
@@ -2063,6 +2139,7 @@ function abrirNovedades() {
 // la misma señal que usa chequearNovedades()). A un usuario que ya venía
 // usando la app, lo marcamos como "visto" sin mostrárselo.
 let tutorialPaso = 0;
+let _tutorialActivo = false;
 
 async function chequearTutorial() {
   if (_tutorialVistoCache) return;
@@ -2073,8 +2150,20 @@ async function chequearTutorial() {
 
 function abrirTutorial() {
   tutorialPaso = 0;
-  openModal('modal-tutorial');
+  _tutorialActivo = true;
+  const capa = document.getElementById('tutorial-spotlight');
+  const tip = document.getElementById('tutorial-tooltip');
+  const hole = document.getElementById('tutorial-spotlight-hole');
+  if (!capa || !tip) return;
+  // La primera vez que aparece, que no "viaje" desde donde quedó la vez anterior.
+  tip.style.transition = 'none';
+  if (hole) hole.style.transition = 'none';
+  capa.classList.remove('hidden');
+  tip.classList.remove('hidden');
   renderTutorial();
+  void tip.offsetWidth; // fuerza el cálculo antes de volver a activar las animaciones
+  tip.style.transition = '';
+  if (hole) hole.style.transition = '';
 }
 
 function tutorialIrA(i) {
@@ -2086,64 +2175,83 @@ function tutorialSiguiente() { tutorialIrA(tutorialPaso + 1); }
 function tutorialAnterior()  { tutorialIrA(tutorialPaso - 1); }
 
 function tutorialFinalizar() {
-  closeModal('modal-tutorial');
-  const overlay = document.getElementById('tutorial-spotlight');
-  if (overlay) overlay.classList.add('hidden');
+  _tutorialActivo = false;
+  const capa = document.getElementById('tutorial-spotlight');
+  const tip = document.getElementById('tutorial-tooltip');
+  if (capa) capa.classList.add('hidden');
+  if (tip) tip.classList.add('hidden');
+}
+
+// Tocar justo el elemento resaltado = avanzar al siguiente paso.
+function tutorialClickCapa(e) {
+  const hole = document.getElementById('tutorial-spotlight-hole');
+  if (!hole) return;
+  const r = hole.getBoundingClientRect();
+  if (r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+    tutorialSiguiente();
+  }
 }
 
 function renderTutorial() {
   if (!TUTORIAL || !TUTORIAL.length) return;
   const paso = TUTORIAL[tutorialPaso];
-  const cont = document.getElementById('tutorial-contenido');
-  const dots = document.getElementById('tutorial-dots');
   const botones = document.getElementById('tutorial-botones');
-  if (!cont || !dots || !botones || !paso) return;
+  if (!paso || !botones) return;
 
-  cont.innerHTML = `
-    <div class="tutorial-emoji">${paso.emoji}</div>
-    <div class="tutorial-titulo">${paso.titulo}</div>
-    <div class="tutorial-texto">${paso.texto}</div>`;
-
-  dots.innerHTML = TUTORIAL.map((_, i) =>
-    `<div class="tutorial-dot${i === tutorialPaso ? ' activo' : ''}" onclick="tutorialIrA(${i})"></div>`
-  ).join('');
+  document.getElementById('tutorial-tip-emoji').textContent = paso.emoji;
+  document.getElementById('tutorial-tip-titulo').textContent = paso.titulo;
+  document.getElementById('tutorial-tip-texto').textContent = paso.texto;
+  document.getElementById('tutorial-tip-contador').textContent = (tutorialPaso + 1) + ' / ' + TUTORIAL.length;
+  document.getElementById('tutorial-progreso-barra').style.width = (((tutorialPaso + 1) / TUTORIAL.length) * 100) + '%';
 
   const esPrimero = tutorialPaso === 0;
   const esUltimo  = tutorialPaso === TUTORIAL.length - 1;
   botones.innerHTML = `
     ${esPrimero
-      ? `<button class="mbtn mbtn-cancel" onclick="tutorialFinalizar()">Saltar</button>`
-      : `<button class="mbtn mbtn-cancel" onclick="tutorialAnterior()">← Atrás</button>`}
-    <button class="mbtn mbtn-ok" onclick="${esUltimo ? 'tutorialFinalizar()' : 'tutorialSiguiente()'}">${esUltimo ? '¡Empezar! 🚀' : 'Siguiente →'}</button>`;
+      ? `<button class="tutorial-btn" onclick="tutorialFinalizar()">Saltar</button>`
+      : `<button class="tutorial-btn" onclick="tutorialAnterior()" title="Anterior">←</button>`}
+    <button class="tutorial-btn primario" onclick="${esUltimo ? 'tutorialFinalizar()' : 'tutorialSiguiente()'}">${esUltimo ? '¡Listo! 🚀' : 'Siguiente →'}</button>`;
 
+  // Cambia a la pantalla real que se está explicando (una sola vez por paso)
+  if (paso.seccion && paso.seccion !== 'cuenta') {
+    const btn = document.querySelector(`.nav-item[onclick*="showSec('${paso.seccion}'"]`);
+    if (btn) showSec(paso.seccion, btn);
+  }
   tutorialReposicionarSpotlight();
 }
 
-// Resalta (con un "agujero" de foco) el ícono real de la sección que
-// describe el paso actual, y cambia a esa pantalla de verdad detrás del
-// tutorial. Si el paso no tiene "seccion" (bienvenida / cierre), se ve
-// como un oscurecido parejo, sin agujero.
+// El elemento real que se resalta en el paso actual: el ícono de esa sección
+// del menú, o el engranaje para el paso de Configuración.
+function tutorialObjetivo(paso) {
+  if (!paso || !paso.seccion) return null;
+  if (paso.seccion === 'cuenta') return document.getElementById('btn-config');
+  return document.querySelector(`.nav-item[onclick*="showSec('${paso.seccion}'"]`);
+}
+
+// Ubica el agujero de foco y el globito (con su flecha) según dónde esté el
+// elemento: arriba del menú en el celular, a la derecha del menú lateral en
+// la compu, debajo del engranaje, etc. Sin elemento (bienvenida/cierre), el
+// globito va centrado y sin flecha.
 function tutorialReposicionarSpotlight() {
-  const modal = document.getElementById('modal-tutorial');
-  if (!modal || !modal.classList.contains('open')) return; // el tutorial no está abierto: no tocar nada
+  if (!_tutorialActivo) return;
   const paso = TUTORIAL && TUTORIAL[tutorialPaso];
-  const overlay = document.getElementById('tutorial-spotlight');
   const hole = document.getElementById('tutorial-spotlight-hole');
-  if (!paso || !overlay || !hole) return;
-  overlay.classList.remove('hidden');
+  const tip = document.getElementById('tutorial-tooltip');
+  const flecha = document.getElementById('tutorial-flecha');
+  if (!paso || !hole || !tip || !flecha) return;
 
-  let target = null;
-  if (paso.seccion === 'cuenta') {
-    target = document.getElementById('btn-cuenta');
-  } else if (paso.seccion) {
-    const btn = document.querySelector(`.nav-item[onclick*="showSec('${paso.seccion}'"]`);
-    if (btn) { showSec(paso.seccion, btn); target = btn; }
-  }
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  const margen = 10;
+  const acotar = (v, min, max) => Math.max(min, Math.min(max, v));
 
+  const target = tutorialObjetivo(paso);
   if (!target) {
-    // Sin sección que resaltar: oscurecido parejo (agujero fuera de pantalla)
     hole.style.width = '0px'; hole.style.height = '0px';
     hole.style.left = '-9999px'; hole.style.top = '-9999px';
+    flecha.className = 'tutorial-flecha oculta';
+    tip.style.left = Math.round((vw - tw) / 2) + 'px';
+    tip.style.top = Math.round((vh - th) / 2) + 'px';
     return;
   }
 
@@ -2153,8 +2261,49 @@ function tutorialReposicionarSpotlight() {
   hole.style.top    = (r.top - pad) + 'px';
   hole.style.width  = (r.width + pad * 2) + 'px';
   hole.style.height = (r.height + pad * 2) + 'px';
+
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const sep = pad + 12; // distancia del globito al elemento (deja lugar a la flecha)
+  const libre = {
+    encima:    r.top - pad - sep - margen,
+    debajo:    vh - (r.bottom + pad) - sep - margen,
+    derecha:   vw - (r.right + pad) - sep - margen,
+    izquierda: r.left - pad - sep - margen,
+  };
+  const entra = {
+    encima: libre.encima >= th, debajo: libre.debajo >= th,
+    derecha: libre.derecha >= tw, izquierda: libre.izquierda >= tw,
+  };
+  let orden;
+  if (vw >= 880 && cx < 300)  orden = ['derecha', 'debajo', 'encima', 'izquierda']; // menú lateral (compu)
+  else if (cy > vh * 0.55)    orden = ['encima', 'debajo', 'derecha', 'izquierda']; // menú de abajo (celu)
+  else                        orden = ['debajo', 'encima', 'izquierda', 'derecha']; // engranaje, arriba
+  let lado = orden.find(l => entra[l]);
+  if (!lado) lado = orden.slice().sort((a, b) => libre[b] - libre[a])[0];
+
+  let left, top, dir;
+  if (lado === 'encima')         { top = r.top - pad - sep - th; left = acotar(cx - tw / 2, margen, vw - tw - margen); dir = 'abajo'; }
+  else if (lado === 'debajo')    { top = r.bottom + pad + sep;   left = acotar(cx - tw / 2, margen, vw - tw - margen); dir = 'arriba'; }
+  else if (lado === 'derecha')   { left = r.right + pad + sep;   top = acotar(cy - th / 2, margen, vh - th - margen);  dir = 'izquierda'; }
+  else                           { left = r.left - pad - sep - tw; top = acotar(cy - th / 2, margen, vh - th - margen); dir = 'derecha'; }
+
+  tip.style.left = Math.round(left) + 'px';
+  tip.style.top  = Math.round(top) + 'px';
+
+  flecha.className = 'tutorial-flecha ' + dir;
+  flecha.style.left = ''; flecha.style.top = '';
+  if (dir === 'abajo' || dir === 'arriba') flecha.style.left = Math.round(acotar(cx - left, 18, tw - 18) - 6) + 'px';
+  else                                     flecha.style.top  = Math.round(acotar(cy - top, 18, th - 18) - 6) + 'px';
 }
 window.addEventListener('resize', tutorialReposicionarSpotlight);
+
+// Teclado (en la compu): ← → para moverse, Esc para cerrar.
+document.addEventListener('keydown', (e) => {
+  if (!_tutorialActivo) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); if (tutorialPaso >= TUTORIAL.length - 1) tutorialFinalizar(); else tutorialSiguiente(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); tutorialAnterior(); }
+  else if (e.key === 'Escape') { tutorialFinalizar(); }
+});
 
 // ── SINCRONIZACIÓN CON LA NUBE (Firebase Auth + Firestore) ──
 // La app sigue funcionando 100% local (IndexedDB) sin iniciar sesión.
@@ -2207,7 +2356,7 @@ function cerrarSesionCuenta() {
 function actualizarUiCuenta(user) {
   const elNo = document.getElementById('cuenta-logueado-no');
   const elSi = document.getElementById('cuenta-logueado-si');
-  const btnCuenta = document.getElementById('btn-cuenta');
+  const cuentaSub = document.getElementById('config-cuenta-sub');
   if (!elNo || !elSi) return;
   if (user) {
     elNo.classList.add('hidden');
@@ -2218,11 +2367,11 @@ function actualizarUiCuenta(user) {
     if (nom) nom.textContent = user.displayName || 'Cuenta de Google';
     const em = document.getElementById('cuenta-email');
     if (em) em.textContent = user.email || '';
-    if (btnCuenta) btnCuenta.textContent = '🔄';
+    if (cuentaSub) cuentaSub.textContent = 'Conectado como ' + (user.email || user.displayName || 'tu cuenta de Google');
   } else {
     elNo.classList.remove('hidden');
     elSi.classList.add('hidden');
-    if (btnCuenta) btnCuenta.textContent = '☁️';
+    if (cuentaSub) cuentaSub.textContent = 'Sin sesión iniciada';
   }
 }
 
@@ -2297,6 +2446,7 @@ function aplicarDatosRemotos(d) {
   if (_semestreActualCache) localforage.setItem('ing1-semestre-actual', String(_semestreActualCache)).catch(()=>{});
   else localforage.removeItem('ing1-semestre-actual').catch(()=>{});
   render();
+  limpiarVencidos();
 }
 
 function pushRemoto() {
@@ -2816,10 +2966,8 @@ function guardarClase(){
 function rAvance(){
   const sr=document.getElementById('stat-row');
   const bs=document.getElementById('barras');
-  const dl=document.getElementById('donut-legend');
   if(!sr) return;
   const total=state.materias.length;
-  const aprobadas=state.materias.filter(m=>{const p=prom(m);return p&&parseFloat(p)>=60;}).length;
   const ps=state.materias.map(m=>parseFloat(prom(m)||0)).filter(p=>p>0);
   const pg=ps.length?(ps.reduce((a,b)=>a+b,0)/ps.length).toFixed(1):'—';
   // Promedio solo de notas finales (escala 0-10), independiente del promedio general de arriba
@@ -2839,23 +2987,6 @@ function rAvance(){
     <div class="stat-num" style="color:${s.col};">${s.num}</div>
     <div class="stat-lbl">${s.lbl}</div>
   </div>`).join('');
-
-  const pct=total?Math.round((aprobadas/total)*100):0;
-  const circ=251;
-  const d=document.getElementById('donut-circ');
-  const dp=document.getElementById('donut-pct');
-  if(d) d.style.strokeDashoffset=circ-(pct/100)*circ;
-  if(dp) dp.textContent=pct+'%';
-
-  if(dl) dl.innerHTML=state.materias.map(m=>{
-    const p=prom(m);
-    const ap=p&&parseFloat(p)>=60;
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span>${!p?'⏳':ap?'✅':'❌'}</span>
-      <span style="font-size:13px;font-weight:500;">${m.nombre}</span>
-      ${p?`<span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">${p}</span>`:''}
-    </div>`;
-  }).join('');
 
   if(bs) bs.innerHTML=state.materias.map(m=>{
     const p=parseFloat(prom(m)||0);
@@ -3417,19 +3548,42 @@ function rCorrGrid(ps) {
 
   const columnasHtml = PLAN.map(bloque => {
     const aprobBloque = bloque.materias.filter(m => getEstadoCorr(ps, m.id) === 'aprobada').length;
+
+    // Regla de bloque (Art. 3°): para cursar el semestre 5 en adelante hay que
+    // tener aprobado TODO el semestre que está 4 lugares antes (mismo criterio
+    // que usa la lista del celular, vía REGLA_BLOQUE / bloqueAprobado).
+    const regla = REGLA_BLOQUE.find(r => r.semGlobal === bloque.semGlobal);
+    const reqBloque = regla ? PLAN.find(b => b.semGlobal === regla.requiere) : null;
+    const reqTxt = reqBloque ? `${reqBloque.anio}° año · ${reqBloque.semestre}° sem.` : '';
+    const faltanReq = regla ? getIdsBloque(regla.requiere).filter(id => getEstadoCorr(ps, id) !== 'aprobada').length : 0;
+    const semestreBloqueado = !!regla && faltanReq > 0;
+
     const cuadrados = bloque.materias.map(m => {
       const est = getEstadoCorr(ps, m.id);
       const disponible = est === 'libre' && puedesCursar(m, ps);
-      const cls = est === 'aprobada' ? 'cg-aprobada' : est === 'regular' ? 'cg-regular' : disponible ? 'cg-disponible' : 'cg-bloqueada';
-      return `<div class="corr-sq ${cls}" data-id="${m.id}" onclick="abrirCorrMateria('${m.id}')" onmouseenter="hoverCorrSq('${m.id}')" onmouseleave="unhoverCorrSq()" title="${m.nombre}">
+      const porBloque = est === 'libre' && semestreBloqueado && !regla.excepciones.includes(m.id);
+      const cls = (est === 'aprobada' ? 'cg-aprobada' : est === 'regular' ? 'cg-regular' : disponible ? 'cg-disponible' : 'cg-bloqueada')
+                + (porBloque ? ' cg-bloque' : '');
+      const tip = porBloque
+        ? `${m.nombre} — Bloqueada: primero tenés que aprobar todo el ${reqTxt} (te faltan ${faltanReq})`
+        : m.nombre;
+      return `<div class="corr-sq ${cls}" data-id="${m.id}" onclick="abrirCorrMateria('${m.id}')" onmouseenter="hoverCorrSq('${m.id}')" onmouseleave="unhoverCorrSq()" title="${tip}">
         <span class="corr-sq-nombre">${m.nombre}</span>
       </div>`;
     }).join('');
+
+    let badgeBloque = '<div class="corr-col-bloque vacio"></div>';
+    if (regla) {
+      badgeBloque = semestreBloqueado
+        ? `<div class="corr-col-bloque bloqueado" title="Para cursar este semestre tenés que aprobar todo el ${reqTxt} (te faltan ${faltanReq})">🔒 Aprobar ${reqBloque.anio}°·${reqBloque.semestre}° (faltan ${faltanReq})</div>`
+        : `<div class="corr-col-bloque habilitado" title="Ya aprobaste todo el ${reqTxt}: este semestre está habilitado">🔓 Habilitado</div>`;
+    }
     return `<div class="corr-col">
       <div class="corr-col-header">
         <div class="corr-col-anio">${bloque.anio}° año</div>
         <div class="corr-col-sem">${bloque.semestre}° sem.</div>
         <div class="corr-col-count">${aprobBloque}/${bloque.materias.length}</div>
+        ${badgeBloque}
       </div>
       <div class="corr-col-sqs">${cuadrados}</div>
     </div>`;
@@ -3452,6 +3606,7 @@ function rCorrGrid(ps) {
       <div class="ley-item"><div class="ley-dot" style="background:var(--accent7);"></div>Regular</div>
       <div class="ley-item"><div class="ley-dot" style="background:var(--accent2);"></div>Disponible</div>
       <div class="ley-item"><div class="ley-dot" style="background:var(--muted);"></div>Bloqueada</div>
+      <div class="ley-item"><span>🔒</span>Falta aprobar el semestre previo</div>
       <div class="ley-item" style="margin-left:auto;"><span class="corr-ley-linea fuerte"></span>Correlativa fuerte</div>
       <div class="ley-item"><span class="corr-ley-linea debil"></span>Correlativa débil</div>
     </div>
@@ -3555,7 +3710,7 @@ function segundosRestantesPomodoro() {
 function iniciarPomodoro() {
   const sel = document.getElementById('pomo-materia');
   const materiaId = sel ? sel.value : '';
-  if (!materiaId) { showToast('⚠️ Elegí una materia primero'); return; }
+  if (!materiaId) { showToast('⚠️ Tenés que seleccionar una materia primero'); return; }
   const trabajoMin  = Math.max(1, parseInt(document.getElementById('pomo-trabajo').value)  || 25);
   const descansoMin = Math.max(1, parseInt(document.getElementById('pomo-descanso').value) || 5);
 
@@ -3611,6 +3766,10 @@ function minutosEstudioEnFecha(key) {
   const dia = state.estudioLog && state.estudioLog[key];
   if (!dia) return 0;
   return Object.values(dia).reduce((a,b) => a + b, 0);
+}
+// Total histórico: todos los minutos estudiados desde el principio, en todas las materias.
+function minutosEstudioTotal() {
+  return state.materias.reduce((a, m) => a + (m.minutosEstudio || 0), 0);
 }
 function minutosEstudioHoy() {
   const d = new Date();
@@ -3670,14 +3829,6 @@ function notificarPomodoro(msg) {
 function dispararNotificacion(titulo, cuerpo) {
   showToast(cuerpo, 4500);
   mostrarNotificacionOS(titulo, { body: cuerpo, icon: './icon-192.png' });
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    osc.start(); osc.stop(ctx.currentTime + 0.35);
-  } catch(e) {}
   if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch(e) {} }
 }
 
@@ -3687,16 +3838,24 @@ function dispararNotificacion(titulo, cuerpo) {
 // muchos navegadores (sobre todo Android) esa forma directa no siempre
 // llega a mostrarse correctamente fuera de la app. Si por algún motivo el
 // Service Worker no está disponible, cae de vuelta al método directo.
+//
+// El sonido lo da la notificación del sistema, no un beep armado a mano —
+// eso evita el doble sonido (y los problemas de reproducir audio sin que
+// el usuario haya tocado algo justo antes, que en el celular suele fallar).
+// "silent" se arma acá según la preferencia guardada (🔊 Sonido en
+// Notificaciones), salvo que el que llama ya lo haya decidido (como la
+// notificación del Pomodoro, que siempre es silenciosa al actualizarse).
 async function mostrarNotificacionOS(titulo, opciones) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const opts = { silent: !_notifConfig.sonido, ...opciones };
   try {
     if ('serviceWorker' in navigator) {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(titulo, opciones);
+      await reg.showNotification(titulo, opts);
       return;
     }
   } catch(e) { console.warn('[notif] showNotification falló, uso método directo:', e); }
-  try { new Notification(titulo, opciones); } catch(e) {}
+  try { new Notification(titulo, opts); } catch(e) {}
 }
 
 // ── RECORDATORIOS (mientras la app esté abierta) ──
@@ -3705,7 +3864,7 @@ async function mostrarNotificacionOS(titulo, opciones) {
 // clase por empezar, o un amigo que te superó estudiando esta semana. No
 // funciona con la app totalmente cerrada — para eso haría falta un servidor
 // propio (ver explicación dada al usuario).
-let _notifConfig = { tareas: true, horario: true, amigos: true };
+let _notifConfig = { tareas: true, horario: true, amigos: true, sonido: true };
 let _notifIntervalo = null;
 let _notifYaAvisadas = { tareasExamenes: {}, horario: {}, amigos: new Set(), amigosSemana: null };
 
@@ -3726,8 +3885,9 @@ function guardarConfigNotificaciones() {
   const t = document.getElementById('notif-tareas');
   const h = document.getElementById('notif-horario');
   const a = document.getElementById('notif-amigos');
-  if (!t || !h || !a) return;
-  _notifConfig = { tareas: t.checked, horario: h.checked, amigos: a.checked };
+  const s = document.getElementById('notif-sonido');
+  if (!t || !h || !a || !s) return;
+  _notifConfig = { tareas: t.checked, horario: h.checked, amigos: a.checked, sonido: s.checked };
   localforage.setItem('ing1-notif-config', JSON.stringify(_notifConfig)).catch(()=>{});
 }
 
@@ -3744,6 +3904,7 @@ function actualizarUiNotificaciones() {
     document.getElementById('notif-tareas').checked = !!_notifConfig.tareas;
     document.getElementById('notif-horario').checked = !!_notifConfig.horario;
     document.getElementById('notif-amigos').checked = !!_notifConfig.amigos;
+    document.getElementById('notif-sonido').checked = _notifConfig.sonido !== false;
   } else if (permiso === 'denied') {
     denegado.classList.remove('hidden');
   } else {
@@ -3843,7 +4004,7 @@ function chequearNotifAmigos() {
     const susMinutos = d.semanaMinutos || 0;
     if (susMinutos > misMinutos && !avisados.has(uid)) {
       avisados.add(uid);
-      dispararNotificacion('🏆 ¡Te superaron!', `${d.nombre || 'Un amigo'} ya estudió más que vos esta semana (${fmtHorasMin(susMinutos)} vs ${fmtHorasMin(misMinutos)})`);
+      dispararNotificacion('🏆 ¡Te superaron!', `${nombrePerfil(d)} ya estudió más que vos esta semana (${fmtHorasMin(susMinutos)} vs ${fmtHorasMin(misMinutos)})`);
     }
     // Si volviste a tomar la delantera, lo sacamos de la lista de "ya avisados"
     // para que pueda volver a avisarte si te vuelve a superar más adelante.
@@ -3957,7 +4118,7 @@ function rPomodoro() {
       <div class="card">
         <div class="form-group">
           <label class="form-label">MATERIA</label>
-          <select class="form-input" id="pomo-materia">${opciones || '<option value="">Agregá una materia primero</option>'}</select>
+          <select class="form-input" id="pomo-materia">${materiasActivas.length ? '<option value="">Seleccionar materia…</option>' + opciones : '<option value="">Agregá una materia primero</option>'}</select>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -3990,6 +4151,13 @@ function rPomodoro() {
       <div class="stat-num pomo-stat-num">${fmtHorasMin(minutosEstudioEstaSemana())}</div>
       <div class="stat-lbl">Esta semana</div>
     </div>
+  </div>
+  <div class="stat-box pomo-total-box">
+    <div class="stat-icon">⏱️</div>
+    <div>
+      <div class="stat-num pomo-stat-num">${fmtHorasMin(minutosEstudioTotal())}</div>
+      <div class="stat-lbl">Total desde que empezaste</div>
+    </div>
   </div>`;
 
   const conTiempo = state.materias.filter(m => (m.minutosEstudio || 0) > 0).sort((a,b) => (b.minutosEstudio||0) - (a.minutosEstudio||0));
@@ -4012,7 +4180,22 @@ function rPomodoro() {
     </div>`;
   }
 
+  // Si la pantalla se redibuja mientras elegís (por ejemplo, llega un dato
+  // de la nube), se conserva lo que ya habías puesto.
+  const _prev = {};
+  ['pomo-materia','pomo-trabajo','pomo-descanso'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) _prev[id] = el.value;
+  });
+
   cont.innerHTML = html;
+
+  Object.keys(_prev).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === _prev[id])) return;
+    el.value = _prev[id];
+  });
   actualizarMiniPomodoro();
 }
 
@@ -4064,10 +4247,11 @@ async function sincronizarPerfilPublico() {
     const materiasResumen = state.materias
       .filter(m => (m.minutosEstudio || 0) > 0)
       .map(m => ({ nombre: m.nombre, minutosEstudio: m.minutosEstudio || 0 }));
-    const totalMinutos = state.materias.reduce((a, m) => a + (m.minutosEstudio || 0), 0);
+    const totalMinutos = minutosEstudioTotal();
     const user = firebase.auth().currentUser;
     await db.collection('perfiles').doc(_uid).set({
       nombre: (user && user.displayName) || 'Sin nombre',
+      alias: state.alias || '',
       foto: (user && user.photoURL) || '',
       actualizado: firebase.firestore.FieldValue.serverTimestamp(),
       totalMinutos,
@@ -4189,12 +4373,36 @@ async function eliminarAmistad(otroUid) {
   } catch(e) { showToast('❌ No se pudo eliminar'); }
 }
 
+// El apodo y el nombre lo escribe cada usuario y lo ven los demás en la
+// pantalla: se escapa antes de ponerlo en el HTML.
+function escapeHtml(t) {
+  return String(t == null ? '' : t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+// Lo que ven los amigos: el apodo si tiene, y si no el nombre de la cuenta de Google.
+function nombrePerfil(d) {
+  return (d && (((d.alias || '').trim()) || d.nombre)) || 'Usuario';
+}
+function normalizarAlias(v) {
+  return String(v == null ? '' : v).replace(/[\u0000-\u001F]/g, '').trim().slice(0, 20);
+}
+function guardarAlias() {
+  const input = document.getElementById('alias-input');
+  if (!input) return;
+  const alias = normalizarAlias(input.value);
+  state.alias = alias;
+  input.value = alias;
+  saveState(); // se sincroniza solo, y de ahí sube al perfil que ven tus amigos
+  showToast(alias ? '✅ Apodo guardado' : 'Apodo borrado: tus amigos ven tu nombre de Google');
+}
+
 // Nombre de un usuario por uid, con caché simple + re-render cuando llega.
 function nombreDeUid(uid) {
   if (_nombresCache[uid]) return _nombresCache[uid];
   _nombresCache[uid] = 'Cargando...';
   db.collection('perfiles').doc(uid).get().then(snap => {
-    _nombresCache[uid] = snap.exists ? (snap.data().nombre || 'Usuario') : 'Usuario';
+    _nombresCache[uid] = snap.exists ? nombrePerfil(snap.data()) : 'Usuario';
     rAmigos();
   }).catch(() => { _nombresCache[uid] = 'Usuario'; });
   return _nombresCache[uid];
@@ -4256,7 +4464,23 @@ function rAmigos() {
     return;
   }
 
+  // Si llega un dato nuevo mientras escribís, no se pierde lo tipeado.
+  const _prevInputs = {};
+  ['alias-input','agregar-amigo-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) _prevInputs[id] = { v: el.value, foco: document.activeElement === el };
+  });
+
   let html = `<div class="card">
+    <div class="form-label" style="margin-bottom:6px;">TU APODO</div>
+    <div class="amigo-codigo-row">
+      <input class="form-input" id="alias-input" maxlength="20" placeholder="Ej: Juanma" value="${escapeHtml(state.alias || '')}">
+      <button class="mbtn mbtn-ok" onclick="guardarAlias()">Guardar</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--muted);margin:8px 0 0;">Es el nombre que ven tus amigos. Si lo dejás vacío, ven el nombre de tu cuenta de Google.</div>
+  </div>
+
+  <div class="card">
     <div class="form-label" style="margin-bottom:6px;">TU CÓDIGO DE AMIGO</div>
     <div class="amigo-codigo-row">
       <input class="form-input" id="mi-codigo-amigo" readonly value="${_uid}">
@@ -4275,7 +4499,7 @@ function rAmigos() {
       <div class="pomo-resumen-titulo">📨 Solicitudes recibidas</div>
       ${_solicitudesRecibidas.map(uid => `
         <div class="amigo-solicitud-row">
-          <div class="amigo-solicitud-nombre">${nombreDeUid(uid)}</div>
+          <div class="amigo-solicitud-nombre">${escapeHtml(nombreDeUid(uid))}</div>
           <button class="mbtn mbtn-ok" style="padding:8px 14px;" onclick="aceptarSolicitud('${uid}')">Aceptar</button>
         </div>`).join('')}
     </div>`;
@@ -4283,7 +4507,7 @@ function rAmigos() {
   if (_solicitudesEnviadas.length) {
     html += `<div class="card">
       <div class="pomo-resumen-titulo">⏳ Esperando que te acepten</div>
-      ${_solicitudesEnviadas.map(uid => `<div class="amigo-solicitud-row"><div class="amigo-solicitud-nombre">${nombreDeUid(uid)}</div></div>`).join('')}
+      ${_solicitudesEnviadas.map(uid => `<div class="amigo-solicitud-row"><div class="amigo-solicitud-nombre">${escapeHtml(nombreDeUid(uid))}</div></div>`).join('')}
     </div>`;
   }
 
@@ -4291,7 +4515,7 @@ function rAmigos() {
   const misAprobadas = PLAN_FLAT.filter(m => ps[m.id] === 'aprobada').length;
   const misStats = {
     uid: _uid, soyYo: true, nombre: 'Vos',
-    totalMinutos: state.materias.reduce((a,m) => a + (m.minutosEstudio||0), 0),
+    totalMinutos: minutosEstudioTotal(),
     semanaMinutos: minutosEstudioEstaSemana(),
     avanceAprobadas: misAprobadas,
     materias: state.materias.filter(m => (m.minutosEstudio||0) > 0).map(m => ({nombre:m.nombre, minutosEstudio:m.minutosEstudio})),
@@ -4299,7 +4523,7 @@ function rAmigos() {
   const amigosStats = _amigosAceptadosUids.map(uid => {
     const d = _perfilesAmigosData[uid];
     if (!d) return null;
-    return { uid, soyYo:false, nombre: d.nombre || 'Usuario', foto: d.foto,
+    return { uid, soyYo:false, nombre: nombrePerfil(d), foto: d.foto,
              totalMinutos: d.totalMinutos||0, semanaMinutos: d.semanaMinutos||0,
              avanceAprobadas: d.avanceAprobadas||0, materias: d.materias||[] };
   }).filter(Boolean);
@@ -4311,7 +4535,7 @@ function rAmigos() {
     ${ranking.map((p,i) => `
       <div class="amigo-ranking-row${p.soyYo ? ' soy-yo' : ''}">
         <div class="amigo-ranking-pos">${medallas[i] || (i+1) + '°'}</div>
-        <div class="amigo-ranking-nombre">${p.nombre}${p.soyYo ? ' (vos)' : ''}</div>
+        <div class="amigo-ranking-nombre">${escapeHtml(p.nombre)}${p.soyYo ? ' (vos)' : ''}</div>
         <div class="amigo-ranking-tiempo">${fmtHorasMin(p.semanaMinutos)}</div>
       </div>`).join('')}
   </div>`;
@@ -4323,8 +4547,8 @@ function rAmigos() {
       const detalleMaterias = [...a.materias].sort((x,y) => y.minutosEstudio - x.minutosEstudio).slice(0, 6);
       return `<div class="card">
         <div class="amigo-card-header">
-          ${a.foto ? `<img src="${a.foto}" class="amigo-foto" onerror="this.style.display='none'">` : `<div class="amigo-foto-placeholder">👤</div>`}
-          <div class="amigo-card-nombre">${a.nombre}</div>
+          ${a.foto ? `<img src="${escapeHtml(a.foto)}" class="amigo-foto" onerror="this.style.display='none'">` : `<div class="amigo-foto-placeholder">👤</div>`}
+          <div class="amigo-card-nombre">${escapeHtml(a.nombre)}</div>
           <button class="amigo-quitar" onclick="eliminarAmistad('${a.uid}')" title="Eliminar amistad">✕</button>
         </div>
         <div class="stat-row-3">
@@ -4342,6 +4566,12 @@ function rAmigos() {
   }
 
   cont.innerHTML = html;
+  Object.keys(_prevInputs).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = _prevInputs[id].v;
+    if (_prevInputs[id].foco) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch(e) {} }
+  });
 }
 
 // ── DETALLE DE MATERIA (Correlatividades) ──
@@ -4465,6 +4695,8 @@ function openModal(id) {
   }
   if(id==='modal-backup') {
     actualizarInfoBackup();
+  }
+  if(id==='modal-notificaciones') {
     actualizarUiNotificaciones();
   }
   if(id==='modal-examen') {
@@ -4507,7 +4739,7 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); e
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{
     if(e.target!==o) return;
-    if (o.id === 'modal-tutorial') tutorialFinalizar(); else o.classList.remove('open');
+    o.classList.remove('open');
   });
 });
 
@@ -4566,6 +4798,12 @@ function onPlanMateriaSelect() {
     nombreInput.classList.remove('form-input-bloqueado');
     codigoInput.classList.remove('form-input-bloqueado');
   }
+}
+
+// Desde el menú de Configuración: cierra el menú y abre la pantalla elegida.
+function abrirDesdeConfig(idModal) {
+  closeModal('modal-config');
+  openModal(idModal);
 }
 
 function fillSelects(){
@@ -4788,10 +5026,52 @@ window.editarTarea=function(id){
   openModal('modal-tarea');
 };
 
+// Limpieza automática de la lista:
+//  - Tareas: una tarea tildada como completada se borra al día siguiente.
+//  - Exámenes: un examen se borra cuando ya pasó su día (a partir de ayer).
+// Las tareas que ya estaban completadas de antes (sin fecha de cuándo se
+// completaron) se marcan "completadas hoy", así se borran mañana y no de golpe.
+// Se llama al abrir la app, al traer datos de la nube y cada 10 minutos
+// (por si la app queda abierta pasada la medianoche).
+function limpiarVencidos() {
+  if (!state) return;
+  if (!state.tareas) state.tareas = [];
+  if (!state.examenes) state.examenes = [];
+  const hoy = new Date();
+  const hoyKey = calKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+  let huboMarca = false;
+  state.tareas.forEach(t => {
+    if (t.completada && !t.completadaEn) { t.completadaEn = hoyKey; huboMarca = true; }
+  });
+
+  const antesT = state.tareas.length, antesE = state.examenes.length;
+  state.tareas = state.tareas.filter(t => !(t.completada && t.completadaEn && t.completadaEn < hoyKey));
+  state.examenes = state.examenes.filter(e => {
+    if (!e.fecha) return true;
+    const d = diasHasta(e.fecha);
+    return isNaN(d) || d >= 0;
+  });
+  const quitadasT = antesT - state.tareas.length;
+  const quitadosE = antesE - state.examenes.length;
+
+  if (quitadasT || quitadosE) {
+    const partes = [];
+    if (quitadasT) partes.push(quitadasT + (quitadasT === 1 ? ' tarea hecha' : ' tareas hechas'));
+    if (quitadosE) partes.push(quitadosE + (quitadosE === 1 ? ' examen que ya pasó' : ' exámenes que ya pasaron'));
+    showToast('🧹 Se quitó de la lista: ' + partes.join(' y '), 3500);
+    saveState(); render();
+  } else if (huboMarca) {
+    saveState();
+  }
+}
+
 window.toggleT=function(id){
   const t=state.tareas.find(x=>x.id===id);
   if(t){
     t.completada=!t.completada;
+    const hoy = new Date();
+    t.completadaEn = t.completada ? calKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()) : null;
     showToast(t.completada ? '✅ Tarea completada' : '↩️ Tarea pendiente');
     saveState(); render();
   }
@@ -5052,6 +5332,8 @@ bootApp().then(async () => {
   await chequearTutorial();
   chequearNovedades();
   await restaurarPomodoroAlArrancar();
+  limpiarVencidos();
+  setInterval(limpiarVencidos, 10 * 60 * 1000);
   if ('Notification' in window && Notification.permission === 'granted') iniciarCheckerNotificaciones();
 }).catch(err => {
   console.error('[boot] Error al iniciar la app:', err);
