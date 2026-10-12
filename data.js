@@ -196,11 +196,20 @@ const CAL_DIAS_ESP = {
 // una entrada más nueva que la última vista en este dispositivo, y muestra
 // el modal de novedades una sola vez. No hace falta tocar index.html para
 // esto: solo agregar el objeto acá.
-//   id      → número entero único y creciente (el siguiente es 29)
+//   id      → número entero único y creciente (el siguiente es 30)
 //   fecha   → 'AAAA-MM-DD'
 //   titulo  → título corto de la actualización
 //   cambios → lista de puntos (en texto simple, sin HTML)
 const CHANGELOG = [
+  {
+    id: 29,
+    fecha: '2026-10-12',
+    titulo: 'Sonido de notificaciones más tranquilo',
+    cambios: [
+      'Las notificaciones ahora suenan con una campanita suave en vez del sonido del sistema.',
+      'En ⚙️ → Notificaciones podés elegir entre "Suave" y "El del sistema", y escuchar cómo suena con el botón Probar.',
+    ],
+  },
   {
     id: 28,
     fecha: '2026-10-11',

@@ -183,6 +183,8 @@ body {
 /* ── NOTIFICACIONES ── */
 .notif-opcion-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; font-size: 12.5px; border-bottom: 1px solid var(--border); }
 .notif-opcion-row:last-child { border-bottom: none; }
+.notif-opcion-row .notif-select { width: auto; min-width: 150px; padding: 8px 10px; font-size: 12px; }
+.notif-opcion-row .notif-probar { flex: none; width: auto; padding: 8px 14px; font-size: 12px; }
 .toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; inset: 0; cursor: pointer; background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; transition: 0.2s; }
@@ -1760,6 +1762,17 @@ body {
         <div class="notif-opcion-row">
           <span>🔊 Sonido en las notificaciones</span>
           <label class="toggle-switch"><input type="checkbox" id="notif-sonido" onchange="guardarConfigNotificaciones()"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="notif-opcion-row">
+          <span>🎵 Tipo de sonido</span>
+          <select class="form-input notif-select" id="notif-tipo-sonido" onchange="guardarConfigNotificaciones()">
+            <option value="suave">Suave (campanita)</option>
+            <option value="sistema">El del sistema</option>
+          </select>
+        </div>
+        <div class="notif-opcion-row">
+          <span>Escuchar cómo suena</span>
+          <button class="mbtn mbtn-cancel notif-probar" onclick="probarSonidoNotificacion()">▶ Probar</button>
         </div>
       </div>
     </div>
@@ -3826,10 +3839,80 @@ function notificarPomodoro(msg) {
 // permiso concedido y la pestaña no está al frente) + sonido + vibración.
 // Lo usan tanto el Pomodoro como los recordatorios de tareas/exámenes,
 // horario y amigos.
-function dispararNotificacion(titulo, cuerpo) {
+async function dispararNotificacion(titulo, cuerpo) {
   showToast(cuerpo, 4500);
-  mostrarNotificacionOS(titulo, { body: cuerpo, icon: './icon-192.png' });
+
+  // Sonido: el de la notificación del sistema no se puede cambiar desde una
+  // web (lo decide el celular), así que por defecto la app reproduce su propio
+  // sonido suave y deja la notificación del sistema en silencio. Si el
+  // navegador no deja reproducir audio en ese momento, la notificación suena
+  // con el sonido del sistema, para que nunca se pierda el aviso.
+  let silenciarSistema = !_notifConfig.sonido; // sonido apagado → todo en silencio
+  if (_notifConfig.sonido && (_notifConfig.tipoSonido || 'suave') === 'suave') {
+    silenciarSistema = await reproducirSonidoSuave();
+  }
+  mostrarNotificacionOS(titulo, { body: cuerpo, icon: './icon-192.png', silent: silenciarSistema });
   if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch(e) {} }
+}
+
+// ── Sonido suave (una campanita de dos notas, armada con Web Audio) ──
+// El navegador solo deja reproducir audio después de que la persona tocó algo
+// en la página; por eso se "desbloquea" con el primer toque o tecla.
+let _audioCtx = null;
+function obtenerAudioCtx() {
+  if (!_audioCtx) {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (C) { try { _audioCtx = new C(); } catch(e) { _audioCtx = null; } }
+  }
+  return _audioCtx;
+}
+function desbloquearAudio() {
+  const ctx = obtenerAudioCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, desbloquearAudio, { once: true }));
+
+// Devuelve true si el sonido se pudo reproducir, false si el navegador lo bloqueó.
+async function reproducirSonidoSuave() {
+  try {
+    const ctx = obtenerAudioCtx();
+    if (!ctx) return false;
+    if (ctx.state === 'suspended') {
+      // Si el navegador lo tiene bloqueado, resume() puede quedar colgado: no esperamos más de 0,4 s.
+      await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 400))]);
+    }
+    if (ctx.state !== 'running') return false;
+    const t0 = ctx.currentTime + 0.02;
+    const nota = (freq, inicio, dur, pico) => {
+      [[freq, 1], [freq * 2, 0.18]].forEach(([f, rel]) => { // fundamental + un armónico suave = timbre de campanita
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine'; osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.0001, t0 + inicio);
+        gain.gain.exponentialRampToValueAtTime(pico * rel, t0 + inicio + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + inicio + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t0 + inicio); osc.stop(t0 + inicio + dur + 0.05);
+      });
+    };
+    nota(783.99, 0, 1.3, 0.16);     // sol
+    nota(1046.5, 0.22, 1.5, 0.14);  // do (una octava arriba)
+    return true;
+  } catch(e) { return false; }
+}
+
+// Botón "Probar" de Configuración → Notificaciones.
+async function probarSonidoNotificacion() {
+  const sel = document.getElementById('notif-tipo-sonido');
+  const tipo = sel ? sel.value : (_notifConfig.tipoSonido || 'suave');
+  if (tipo === 'suave') {
+    const ok = await reproducirSonidoSuave();
+    showToast(ok ? '🔔 Así suena el sonido suave' : '⚠️ El navegador no dejó reproducir el sonido; se va a usar el del sistema', 3500);
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    // El sonido del sistema es el de la propia notificación: hay que mostrar una de prueba.
+    mostrarNotificacionOS('🔔 Notificación de prueba', { body: 'Así suena el sonido del sistema', icon: './icon-192.png', silent: false, tag: 'prueba-sonido' });
+  } else {
+    showToast('Primero activá las notificaciones');
+  }
 }
 
 // Muestra una notificación REAL del sistema (aparece en la bandeja de
@@ -3839,12 +3922,10 @@ function dispararNotificacion(titulo, cuerpo) {
 // llega a mostrarse correctamente fuera de la app. Si por algún motivo el
 // Service Worker no está disponible, cae de vuelta al método directo.
 //
-// El sonido lo da la notificación del sistema, no un beep armado a mano —
-// eso evita el doble sonido (y los problemas de reproducir audio sin que
-// el usuario haya tocado algo justo antes, que en el celular suele fallar).
 // "silent" se arma acá según la preferencia guardada (🔊 Sonido en
-// Notificaciones), salvo que el que llama ya lo haya decidido (como la
-// notificación del Pomodoro, que siempre es silenciosa al actualizarse).
+// Notificaciones), salvo que el que llama ya lo haya decidido (como
+// dispararNotificacion, que la deja en silencio cuando suena el sonido suave
+// de la app, o la notificación del Pomodoro al actualizarse).
 async function mostrarNotificacionOS(titulo, opciones) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const opts = { silent: !_notifConfig.sonido, ...opciones };
@@ -3864,7 +3945,7 @@ async function mostrarNotificacionOS(titulo, opciones) {
 // clase por empezar, o un amigo que te superó estudiando esta semana. No
 // funciona con la app totalmente cerrada — para eso haría falta un servidor
 // propio (ver explicación dada al usuario).
-let _notifConfig = { tareas: true, horario: true, amigos: true, sonido: true };
+let _notifConfig = { tareas: true, horario: true, amigos: true, sonido: true, tipoSonido: 'suave' };
 let _notifIntervalo = null;
 let _notifYaAvisadas = { tareasExamenes: {}, horario: {}, amigos: new Set(), amigosSemana: null };
 
@@ -3887,7 +3968,9 @@ function guardarConfigNotificaciones() {
   const a = document.getElementById('notif-amigos');
   const s = document.getElementById('notif-sonido');
   if (!t || !h || !a || !s) return;
-  _notifConfig = { tareas: t.checked, horario: h.checked, amigos: a.checked, sonido: s.checked };
+  const tipo = document.getElementById('notif-tipo-sonido');
+  _notifConfig = { tareas: t.checked, horario: h.checked, amigos: a.checked, sonido: s.checked,
+                   tipoSonido: tipo ? tipo.value : (_notifConfig.tipoSonido || 'suave') };
   localforage.setItem('ing1-notif-config', JSON.stringify(_notifConfig)).catch(()=>{});
 }
 
@@ -3905,6 +3988,8 @@ function actualizarUiNotificaciones() {
     document.getElementById('notif-horario').checked = !!_notifConfig.horario;
     document.getElementById('notif-amigos').checked = !!_notifConfig.amigos;
     document.getElementById('notif-sonido').checked = _notifConfig.sonido !== false;
+    const tipoSel = document.getElementById('notif-tipo-sonido');
+    if (tipoSel) tipoSel.value = _notifConfig.tipoSonido || 'suave';
   } else if (permiso === 'denied') {
     denegado.classList.remove('hidden');
   } else {
